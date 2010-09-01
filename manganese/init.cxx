@@ -14,23 +14,38 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <string>
-#include <iostream>
+#include <boost/python.hpp>
 
 #include "init.hxx"
 
-int
-main (int argc, char** argv)
+namespace mn
 {
-  using std::cout;
-  using std::endl;
-  using std::string;
+  static char const* py_argv[] = {"manganese"};
 
-  cout << "Hello, World (from C++)!" << endl;
+  void
+  init_python ()
+  {
+    Py_InitializeEx (0);
+    PySys_SetArgv (1, const_cast<char**> (py_argv));
 
-  mn::init_python ();
-  mn::exec_python (string ("print 'Hello, World (from embedded python)!'"));
-  mn::exec_python (string ("import vismut; print vismut.test()"));
+    // remove the current working directory from sys.path
+    // exec_python ("import sys; sys.path.pop(0)");
+  }
 
-  return 0;
-}
+  void
+  exec_python (std::string const& code)
+  {
+    using namespace boost::python;
+
+    try
+      {
+	object main = import ("__main__");
+	object dict = main.attr ("__dict__");
+	object ignored = exec (code.c_str(), dict, dict);
+      }
+    catch (error_already_set const&)
+      {
+	PyErr_Print ();
+      }
+  }
+};

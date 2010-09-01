@@ -1,4 +1,4 @@
-/* manganese - mutabor-ng platform runner
+/* vismut - mutabor-ng platform visualization
  * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -14,23 +14,20 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <string>
-#include <iostream>
+#include <boost/python.hpp>
 
-#include "init.hxx"
-
-int
-main (int argc, char** argv)
+namespace bi
 {
-  using std::cout;
-  using std::endl;
-  using std::string;
+  char const*
+  test ()
+  {
+    return "Hello, world! (from C++ python extension)";
+  }
 
-  cout << "Hello, World (from C++)!" << endl;
+  BOOST_PYTHON_MODULE (_vismut)
+  {
+    using namespace boost::python;
 
-  mn::init_python ();
-  mn::exec_python (string ("print 'Hello, World (from embedded python)!'"));
-  mn::exec_python (string ("import vismut; print vismut.test()"));
-
-  return 0;
+    def ("test", test);
+  }
 }

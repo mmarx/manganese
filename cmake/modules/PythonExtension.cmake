@@ -1,4 +1,4 @@
-# vismut - mutabor-ng platform visualization
+# mutabor-ng platform
 # Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -13,14 +13,17 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# find SDL
+function(python_extension extension_NAME extension_PREFIX)
+  # find source files
+  file(GLOB ${extension_NAME}_SOURCES ${extension_PREFIX}/*.cxx)
+  file(GLOB ${extension_NAME}_PYTHON ${extension_PREFIX}/*.py)
 
-#set(SDL_BUILDING_LIBRARY ON)
-#find_package(SDL REQUIRED)
+  # build the extension
+  add_library(${extension_NAME} MODULE ${${extension_NAME}_SOURCES})
+  target_link_libraries(${extension_NAME} ${Boost_PYTHON_LIBRARY})
+  set_target_properties(${extension_NAME} PROPERTIES PREFIX "_")
 
-include_directories(${SDL_INCLUDE_DIR})
-
-include(PythonExtension)
-
-python_extension(vismut "vismut/")
-#target_link_libraries(vismut ${SDL_LIBRARY})
+  # install it
+  install(TARGETS ${extension_NAME} LIBRARY DESTINATION ${extension_PREFIX})
+  install(FILES ${${extension_NAME}_PYTHON} DESTINATION ${extension_PREFIX})
+endfunction(python_extension)

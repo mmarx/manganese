@@ -14,23 +14,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef MN_INIT_HXX
+#define MN_INIT_HXX
+
 #include <string>
-#include <iostream>
 
-#include "init.hxx"
-
-int
-main (int argc, char** argv)
+namespace mn
 {
-  using std::cout;
-  using std::endl;
-  using std::string;
+  void
+  init_python ();
 
-  cout << "Hello, World (from C++)!" << endl;
+  void
+  exec_python (std::string const& code);
+};
 
-  mn::init_python ();
-  mn::exec_python (string ("print 'Hello, World (from embedded python)!'"));
-  mn::exec_python (string ("import vismut; print vismut.test()"));
-
-  return 0;
-}
+#endif // not MN_INIT_HXX

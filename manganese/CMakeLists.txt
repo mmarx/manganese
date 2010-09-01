@@ -15,8 +15,7 @@
 
 file(GLOB manganese_SOURCES *.cxx)
 
-include_directories(${PYTHON_INCLUDE_DIRS})
-
 add_executable(manganese ${manganese_SOURCES})
 target_link_libraries(manganese ${Boost_LIBRARIES})
 target_link_libraries(manganese ${PYTHON_LIBRARIES})
+install(TARGETS manganese RUNTIME DESTINATION .)

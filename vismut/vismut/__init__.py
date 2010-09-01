@@ -13,14 +13,4 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# find SDL
-
-#set(SDL_BUILDING_LIBRARY ON)
-#find_package(SDL REQUIRED)
-
-include_directories(${SDL_INCLUDE_DIR})
-
-include(PythonExtension)
-
-python_extension(vismut "vismut/")
-#target_link_libraries(vismut ${SDL_LIBRARY})
+from _vismut import *

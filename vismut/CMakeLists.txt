@@ -15,12 +15,15 @@
 
 # find SDL
 
-#set(SDL_BUILDING_LIBRARY ON)
-#find_package(SDL REQUIRED)
+set(SDL_BUILDING_LIBRARY ON)
+find_package(SDL REQUIRED)
+find_package(OpenGL REQUIRED)
 
 include_directories(${SDL_INCLUDE_DIR})
+include_directories(${OpenGL_INCLUDE_DIR})
 
 include(PythonExtension)
 
 python_extension(vismut "vismut/")
 #target_link_libraries(vismut ${SDL_LIBRARY})
+#target_link_libraries(vismut ${OpenGL_gl_LIBRARIES})

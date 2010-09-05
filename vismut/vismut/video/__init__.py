@@ -13,19 +13,9 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# find SDL
+from _video import *
 
-set(SDL_BUILDING_LIBRARY ON)
-find_package(SDL REQUIRED)
-find_package(OpenGL REQUIRED)
 
-include_directories(${SDL_INCLUDE_DIR})
-include_directories(${OpenGL_INCLUDE_DIR})
-
-include(PythonExtension)
-
-python_extension(vismut "vismut/")
-python_extension(video "vismut/video/")
-
-target_link_libraries(video ${SDL_LIBRARY})
-#target_link_libraries(vismut ${OpenGL_gl_LIBRARIES})
+def list_video_modes():
+    from operator import attrgetter
+    return sorted(_video.list_video_modes(), key=attrgetter('size'))

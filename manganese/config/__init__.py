@@ -47,6 +47,10 @@ def _try_load(file):
 
 
 def load(app):
+    """Load the config for app
+
+    This tries to load each file in the search path.
+    """
     config = dict()
 
     for path in _search_path:

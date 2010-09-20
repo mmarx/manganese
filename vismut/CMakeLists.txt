@@ -24,8 +24,8 @@ include_directories(${OpenGL_INCLUDE_DIR})
 
 include(PythonExtension)
 
-python_extension(vismut "vismut/")
-python_extension(video "vismut/video/")
+python_extension(vismut "vismut/" "manganese/")
+python_extension(video "vismut/video/" "manganese/")
 
 target_link_libraries(video ${SDL_LIBRARY})
 #target_link_libraries(vismut ${OpenGL_gl_LIBRARIES})

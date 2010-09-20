@@ -13,6 +13,9 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import time
+
+
 import _apps
 
 import manganese.vismut as vismut
@@ -34,5 +37,7 @@ class Application(_apps.Application):
 
         if rect in modes:
             print 'got it!'
+            self.context.set_mode(rect)
+            time.sleep(5)
         else:
             print 'meh'

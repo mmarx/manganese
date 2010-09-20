@@ -14,6 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <boost/python.hpp>
+
+#include <SDL.h>
+
 namespace bi
 {
   class SDLContext
@@ -27,6 +31,9 @@ namespace bi
     {
       return users_;
     }
+
+    void
+    set_mode (boost::python::object mode);
 
     char const*
     error_string () const;
@@ -49,5 +56,6 @@ namespace bi
   private:
     static bool error_;
     static unsigned int users_;
+    SDL_Surface* surface_;
   };
 }

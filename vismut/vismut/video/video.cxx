@@ -30,6 +30,7 @@ namespace bi
   {
     if (!users_++)
       {
+	surface_ = NULL;
 	call (SDL_Init (SDL_INIT_VIDEO));
       }
   }
@@ -39,6 +40,7 @@ namespace bi
     if (!--users_)
       {
 	SDL_Quit ();
+	surface_ = NULL;
       }
   }
 
@@ -82,7 +84,20 @@ namespace bi
     return the_modes;
   }
 
+  void
+  SDLContext::set_mode (py::object mode)
+  {
+    using namespace boost::python;
 
+    SDL_Rect& rect = extract<SDL_Rect&> (mode);
+
+    surface_ = SDL_SetVideoMode (rect.w, rect.h, 32, SDL_OPENGL);
+
+    if (!surface_)
+      {
+	flag_error ();
+      }
+  }
 
   BOOST_PYTHON_MODULE (_video)
   {
@@ -91,7 +106,8 @@ namespace bi
     class_<SDLContext> ("SDLContext")
       .add_property ("users", &SDLContext::users)
       .add_property ("have_error", &SDLContext::have_error)
-      .add_property ("error_string", &SDLContext::error_string);
+      .add_property ("error_string", &SDLContext::error_string)
+      .def ("set_mode", &SDLContext::set_mode);
 
     class_<SDL_Rect> ("SDLRect")
       .def_readwrite ("x", &SDL_Rect::x)

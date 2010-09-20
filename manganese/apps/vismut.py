@@ -15,9 +15,24 @@
 
 import _apps
 
+import manganese.vismut as vismut
+import manganese.vismut.video
+
 
 class Application(_apps.Application):
+
     def run(self):
         print "Hello, World! (from vismut application)"
         print "got args: `", self.args, "'"
         print "got config: `", self.config, "'"
+
+        self.context = vismut.video.SDLContext()
+
+        modes = vismut.video.list_video_modes()
+        preferred_mode = self.cfg('mode', '640x480')
+        rect = vismut.video.SDLRect.from_string(preferred_mode)
+
+        if rect in modes:
+            print 'got it!'
+        else:
+            print 'meh'

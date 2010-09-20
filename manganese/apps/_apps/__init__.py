@@ -21,3 +21,9 @@ class Application(object):
         self.args = args
         self.config = config.load(app=args[0])
         print "Hello, World! (from managenese application framework)"
+
+    def cfg(self, key, default):
+        if key in self.config:
+            return self.config[key]
+        else:
+            return default

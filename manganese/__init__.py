@@ -1,4 +1,4 @@
-# manganese - mutabor-ng platform runner
+# manganese - mutabor-ng platform
 # Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -12,22 +12,3 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
-# manganese-runner and top-level python module tree
-file(GLOB manganese_SOURCES *.cxx)
-file(GLOB manganese_PYTHON *.py)
-
-configure_file(config.hxx.in config.hxx ESCAPE_QUOTES)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-add_executable(mng ${manganese_SOURCES})
-target_link_libraries(mng ${Boost_LIBRARIES})
-target_link_libraries(mng ${PYTHON_LIBRARIES})
-install(TARGETS mng RUNTIME DESTINATION .)
-install(FILES ${manganese_PYTHON} DESTINATION manganese)
-
-include(PythonExtension)
-
-python_extension(config "config/" "manganese/" PURE)
-python_extension(apps "apps/" "manganese/" PURE)
-python_extension(_apps "apps/_apps" "manganese/" PURE)

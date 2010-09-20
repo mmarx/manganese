@@ -26,6 +26,9 @@ namespace mn
 
   void
   exec_python (std::string const& code);
+
+  void
+  bootstrap (int argc, char** argv);
 };
 
 #endif // not MN_INIT_HXX

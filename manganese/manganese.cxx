@@ -17,20 +17,25 @@
 #include <string>
 #include <iostream>
 
+#include "config.hxx"
 #include "init.hxx"
 
 int
 main (int argc, char** argv)
 {
-  using std::cout;
+  using std::cerr;
   using std::endl;
   using std::string;
 
-  cout << "Hello, World (from C++)!" << endl;
+  if (argc < 2)
+    {
+      cerr << "usage: " << argv[0] << " COMPONENT [OPTION...]" << endl;
+      return 1;
+    }
 
   mn::init_python ();
   mn::exec_python (string ("print 'Hello, World (from embedded python)!'"));
-  mn::exec_python (string ("import vismut; print vismut.test()"));
+  mn::bootstrap (argc, argv);
 
   return 0;
 }

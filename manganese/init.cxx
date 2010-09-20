@@ -16,11 +16,14 @@
 
 #include <boost/python.hpp>
 
+#include "config.hxx"
 #include "init.hxx"
 
 namespace mn
 {
-  static char const* py_argv[] = {"manganese"};
+  using std::string;
+
+  static char const* py_argv[] = {"mng"};
 
   void
   init_python ()
@@ -29,11 +32,14 @@ namespace mn
     PySys_SetArgv (1, const_cast<char**> (py_argv));
 
     // remove the current working directory from sys.path
-    // exec_python ("import sys; sys.path.pop(0)");
+    exec_python ("import sys; sys.path.pop(0)");
+    // ... and add python_prefix to it
+    exec_python (string ("import sys; sys.path.append('")
+		 + config::python_prefix + "')");
   }
 
   void
-  exec_python (std::string const& code)
+  exec_python (string const& code)
   {
     using namespace boost::python;
 
@@ -47,5 +53,34 @@ namespace mn
       {
 	PyErr_Print ();
       }
+  }
+
+  void
+  bootstrap (int argc, char** argv)
+  {
+    using namespace boost::python;
+
+    list args;
+    string app = argv[1];
+
+    for (int i = 1; i < argc; ++i)
+      {
+	args.append (string (argv[i]));
+      }
+
+    try
+      {
+	object main = import ("__main__");
+	object dict = main.attr ("__dict__");
+	dict["args"] = args;
+      }
+    catch (error_already_set const&)
+      {
+	PyErr_Print ();
+      }
+
+    exec_python (string ("import manganese.apps.") + app + " as app\n"
+		 "the_app = app.Application(args)\n"
+		 "the_app.run()");
   }
 };

@@ -26,8 +26,15 @@ target_link_libraries(mng ${PYTHON_LIBRARIES})
 install(TARGETS mng RUNTIME DESTINATION .)
 install(FILES ${manganese_PYTHON} DESTINATION manganese)
 
+# find JACK
+find_package(Jack)
+
 include(PythonExtension)
 
 python_extension(config "config/" "manganese/" PURE)
 python_extension(apps "apps/" "manganese/" PURE)
 python_extension(_apps "apps/_apps" "manganese/" PURE)
+python_extension(midi "midi/" "manganese/" PURE)
+python_extension(jack "midi/jack/" "manganese/")
+
+target_link_libraries(jack ${JACK_LIBRARIES})

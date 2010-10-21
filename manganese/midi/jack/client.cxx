@@ -14,31 +14,38 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <boost/python.hpp>
-#include <boost/thread.hpp>
-
 #include "client.hxx"
 
 namespace mn
 {
-  void
-  jack_init ()
+  int
+  process (jack_nframes_t nframes,
+	   void* arg)
   {
-    JackClient client;
-    client.init();
+    return static_cast<JackClient*> (arg)->process (nframes);
   }
   
-  char const*
-  test ()
+  void
+  JackClient::init ()
   {
-    return "Hello, world! (from C++ python extension)";
-  }
+    jack_status_t status;
+    jack_client_t* client = jack_client_open ("manganese",
+					      JackNullOption,
+					      &status);
 
-  BOOST_PYTHON_MODULE (_jack)
-  {
-    using namespace boost::python;
+    jack_port_t* port = jack_port_register (client,
+					    "midi in",
+					    JACK_DEFAULT_MIDI_TYPE,
+					    JackPortIsInput | JackPortIsTerminal,
+					    0);
+    
+    jack_port_t* port_ = jack_port_register (client,
+					     "midi out",
+					     JACK_DEFAULT_MIDI_TYPE,
+					     JackPortIsOutput | JackPortIsTerminal,
+					     0);
 
-    def ("test", test);
-    def ("init", jack_init);
+    jack_set_process (client, ::mn::process, this);
+  
   }
 }

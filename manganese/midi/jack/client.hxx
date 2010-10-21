@@ -14,31 +14,23 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <boost/python.hpp>
-#include <boost/thread.hpp>
+#ifndef MANGANESE_MIDI_JACK_CLIENT_HXX
+#define MANGANESE_MIDI_JACK_CLIENT_HXX
 
-#include "client.hxx"
+#include <jack/jack.h>
 
 namespace mn
 {
-  void
-  jack_init ()
+  class
+  JackClient
   {
-    JackClient client;
-    client.init();
-  }
-  
-  char const*
-  test ()
-  {
-    return "Hello, world! (from C++ python extension)";
-  }
+  public:
+    void
+    init ();
 
-  BOOST_PYTHON_MODULE (_jack)
-  {
-    using namespace boost::python;
-
-    def ("test", test);
-    def ("init", jack_init);
-  }
+    int
+    process (jack_nframes_t nframes);
+  };
 }
+
+#endif // MANGANESE_MIDI_JACK_CLIENT_HXX

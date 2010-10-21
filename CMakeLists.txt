@@ -28,7 +28,7 @@ set(BOOST_MULTITHREADED OFF)
 set(BOOST_USE_STATIC_LIBS OFF)
 set(BOOST_ADDITIONAL_VERSIONS "1.42" "1.42.0")
 
-find_package(Boost 1.42.0 REQUIRED COMPONENTS python program_options)
+find_package(Boost 1.42.0 REQUIRED COMPONENTS python program_options thread)
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_subdirectory(manganese)

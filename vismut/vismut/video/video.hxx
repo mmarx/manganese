@@ -14,6 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef VISMUT_VIDEO_VIDEO_HXX
+#define VISMUT_VIDEO_VIDEO_HXX
+
 #include <boost/python.hpp>
 
 #include <SDL.h>
@@ -59,3 +62,5 @@ namespace bi
     SDL_Surface* surface_;
   };
 }
+
+#endif // VISMUT_VIDEO_VIDEO_HXX

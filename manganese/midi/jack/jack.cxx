@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <memory>
+
 #include <boost/python.hpp>
 #include <boost/thread.hpp>
 
@@ -21,24 +23,27 @@
 
 namespace mn
 {
+  JackClient*
+  create_client ()
+  {
+    return new JackClient;
+  }
+
   void
-  jack_init ()
+  destroy_client (std::auto_ptr<JackClient> client)
   {
-    JackClient client;
-    client.init();
-  }
-  
-  char const*
-  test ()
-  {
-    return "Hello, world! (from C++ python extension)";
-  }
+    client.reset ();
+  };
 
   BOOST_PYTHON_MODULE (_jack)
   {
     using namespace boost::python;
 
-    def ("test", test);
-    def ("init", jack_init);
+    def ("create_client",
+	 create_client,
+	 return_value_policy<manage_new_object> ());
+    def ("destroy_client",
+	 destroy_client);
+    class_<JackClient> ("JackClient");
   }
 }

@@ -25,11 +25,15 @@ namespace mn
   JackClient
   {
   public:
-    void
-    init ();
+    JackClient ();
+    ~JackClient ();
 
     int
     process (jack_nframes_t nframes);
+
+  private:
+    jack_client_t* client;
+    jack_port_t* in_port;
   };
 }
 

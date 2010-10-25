@@ -13,4 +13,15 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from _jack import *
+from contextlib import contextmanager
+
+import _jack
+
+
+@contextmanager
+def create_client():
+    client = _jack.create_client()
+    try:
+        yield client
+    finally:
+        _jack.destroy_client(client)

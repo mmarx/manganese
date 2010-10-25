@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <iostream>
+
 #include "client.hxx"
 
 namespace mn
@@ -24,28 +26,43 @@ namespace mn
   {
     return static_cast<JackClient*> (arg)->process (nframes);
   }
-  
-  void
-  JackClient::init ()
+
+  JackClient::JackClient ()
+    : client (0), in_port (0)
   {
     jack_status_t status;
-    jack_client_t* client = jack_client_open ("manganese",
-					      JackNullOption,
-					      &status);
+    client = jack_client_open ("manganese",
+			       JackNullOption,
+			       &status);
 
-    jack_port_t* port = jack_port_register (client,
-					    "midi in",
-					    JACK_DEFAULT_MIDI_TYPE,
-					    JackPortIsInput | JackPortIsTerminal,
-					    0);
-    
-    jack_port_t* port_ = jack_port_register (client,
-					     "midi out",
-					     JACK_DEFAULT_MIDI_TYPE,
-					     JackPortIsOutput | JackPortIsTerminal,
-					     0);
+    in_port = jack_port_register (client,
+				  "midi in",
+				  JACK_DEFAULT_MIDI_TYPE,
+				  JackPortIsInput | JackPortIsTerminal,
+				  0);
 
-    jack_set_process (client, ::mn::process, this);
-  
+    jack_set_process_callback (client, ::mn::process, this);
+
+    jack_activate (client);
+  }
+
+  JackClient::~JackClient ()
+  {
+    if (client)
+      {
+	if (in_port)
+	  {
+	    jack_port_unregister (client, in_port);
+	  }
+
+	jack_client_close (client);
+      }
+  }
+
+  int
+  JackClient::process (jack_nframes_t nframes)
+  {
+    // do something
+    return 0;
   }
 }

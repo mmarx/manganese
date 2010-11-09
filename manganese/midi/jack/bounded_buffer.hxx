@@ -14,6 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifndef MANGANESE_MIDI_JACK_BOUNDED_BUFFER_HXX
+#define MANGANESE_MIDI_JACK_BOUNDED_BUFFER_HXX
+
 #include <iostream>
 
 #include <boost/circular_buffer.hpp>
@@ -85,6 +88,8 @@ namespace mn
     container_type container;
 
     boost::mutex mutex;
-    boost::condition no_empty;
-  }
+    boost::condition not_empty;
+  };
 }
+
+#endif // MANGANESE_MIDI_JACK_BOUNDED_BUFFER_HXX

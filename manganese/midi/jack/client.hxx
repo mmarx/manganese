@@ -18,6 +18,7 @@
 #define MANGANESE_MIDI_JACK_CLIENT_HXX
 
 #include <jack/jack.h>
+#include "bounded_buffer.hxx"
 
 namespace mn
 {

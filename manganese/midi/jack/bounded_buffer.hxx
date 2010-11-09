@@ -35,60 +35,141 @@ namespace mn
    */
 
   template<typename T>
-  class bounded_buffer : public boost::noncopyable
+  class basic_bounded_buffer : public boost::noncopyable
   {
     typedef boost::circular_buffer<T> container_type;
     typedef typename container_type::size_type size_type;
     typedef typename container_type::value_type value_type;
     typedef typename boost::call_traits<value_type> param_type;
 
-    explicit bounded_buffer (size_type capacity)
-      : unread (0), container (capacity)
+    explicit basic_bounded_buffer (size_type capacity_)
+      : capacity (capacity_), unread (0), container (capacity_)
     {
     }
 
     void
     push_front (param_type item)
     {
-      if (unread < container.capacity ())
-	{
-	  ++unread;
-	  not_empty.notify_one ();
-	}
-      else
-	{
-	  using std::cerr;
-	  using std::endl;
-
-	  cerr << "Over capacity, dropping item." << endl;
-	}
+      container.push_front (item);
+      ++unread;
     }
 
     void
     pop_back (value_type* item)
     {
-      boost::mutex::scoped_lock lock (mutex);
-      not_empty.wait (lock,
-		      boost::bind (&bounded_buffer<value_type>::is_not_empty,
-				   this));
-
       item = container[--unread];
-
-      lock.unlock ();
     }
 
-  private:
+  protected:
     bool
     is_not_empty () const
     {
       return unread > 0;
     }
 
+    bool
+    is_not_full () const
+    {
+      return unread < capacity;
+    }
+
     size_type unread;
+    size_type capacity;
     container_type container;
 
     boost::mutex mutex;
+  };
+
+  template<typename T>
+  class inbounded_buffer : public basic_bounded_buffer<T>
+  {
+  public:
+    explicit inbounded_buffer (typename basic_bounded_buffer<T>::size_type capacity)
+      : basic_bounded_buffer<T>::basic_bounded_buffer (capacity)
+    {
+    }
+
+    void
+    push_front (typename basic_bounded_buffer<T>::param_type item)
+    {
+      boost::mutex::scoped_lock lock (basic_bounded_buffer<T>::mutex);
+
+      if (basic_bounded_buffer<T>::is_not_full ())
+	{
+	  basic_bounded_buffer<T>::push_front (item);	  
+	}
+      else
+	{
+	  std::cerr << "Over capacity, dropping item." << std::endl;
+	}
+      
+      lock.unlock ();
+    }
+
+    void
+    pop_back (typename basic_bounded_buffer<T>::value_type* item)
+    {
+      boost::mutex::scoped_lock lock (basic_bounded_buffer<T>::mutex);
+      not_empty.wait (lock,
+      		      boost::bind (&basic_bounded_buffer<T>::is_not_empty,
+      				   this));
+
+      basic_bounded_buffer<T>::pop_back (item);
+
+      lock.unlock ();      
+    }
+
+  protected:
     boost::condition not_empty;
+  };
+
+  template<typename T>
+  class outbounded_buffer : public basic_bounded_buffer<T>
+  {
+  public:
+    explicit outbounded_buffer (typename basic_bounded_buffer<T>::size_type capacity)
+      : basic_bounded_buffer<T>::basic_bounded_buffer (capacity)
+    {
+    }
+
+    void
+    push_front (typename basic_bounded_buffer<T>::param_type item)
+    {
+      boost::mutex::scoped_lock lock (basic_bounded_buffer<T>::mutex);
+      not_full.wait (lock,
+		     boost::bind (&basic_bounded_buffer<T>::is_not_full,
+				  this));
+
+      basic_bounded_buffer<T>::push_front (item);	  
+      
+      lock.unlock ();
+    }
+
+    void
+    pop_back (typename basic_bounded_buffer<T>::value_type* item)
+    {
+      boost::mutex::scoped_lock lock (basic_bounded_buffer<T>::mutex);
+
+      if (basic_bounded_buffer<T>::is_not_empty ())
+	{
+	  basic_bounded_buffer<T>::push_back (item);
+	}
+      else
+	{
+	  std::cerr << "trying to pop an empty buffer." << std::endl;
+	  item = 0;
+	}
+
+      lock.unlock ();
+
+      if (item)
+	{
+	  not_full.notify_one ();
+	}
+    }
+
+  protected:
+    boost::condition not_full;
   };
 }
 

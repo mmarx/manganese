@@ -15,4 +15,5 @@
 
 include(PythonExtension)
 
-python_extension(lithium "lithium/" "manganese/")
+python_extension(lithium "lithium/" "manganese/" PURE)
+python_extension(lindenmayer "lithium/lindenmayer" "manganese/" PURE)

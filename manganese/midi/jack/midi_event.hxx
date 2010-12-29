@@ -14,34 +14,29 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef MANGANESE_MIDI_JACK_CLIENT_HXX
-#define MANGANESE_MIDI_JACK_CLIENT_HXX
-
-#include <boost/shared_ptr.hpp>
-
-#include <jack/jack.h>
-
-#include "midi_event.hxx"
-#include "bounded_buffer.hxx"
+#ifndef MANGANESE_MIDI_JACK_MIDI_EVENT_HXX
+#define MANGANESE_MIDI_JACK_MIDI_EVENT_HXX
 
 namespace mn
 {
-  class
-  JackClient
+  struct midi_event
   {
-  public:
-    JackClient ();
-    ~JackClient ();
+    midi_event (unsigned char type,
+		unsigned char channel,
+		unsigned char key,
+		unsigned char value)
+      : type_ (type),
+	channel_ (channel),
+	key_ (key),
+	value_ (value)
+    {
+    }
 
-    int
-    process (jack_nframes_t nframes);
-
-  private:
-    jack_client_t* client_;
-    jack_port_t* in_port_;
-
-    boost::shared_ptr<inbounded_buffer<midi_event> > in_queue_;
+    unsigned char type_;
+    unsigned char channel_;
+    unsigned char key_;
+    unsigned char value_;
   };
 }
 
-#endif // MANGANESE_MIDI_JACK_CLIENT_HXX
+#endif // MANGANESE_MIDI_JACK_MIDI_EVENT_HXX

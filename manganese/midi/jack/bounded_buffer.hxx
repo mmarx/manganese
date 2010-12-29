@@ -37,10 +37,11 @@ namespace mn
   template<typename T>
   class basic_bounded_buffer : public boost::noncopyable
   {
+  public:
     typedef boost::circular_buffer<T> container_type;
     typedef typename container_type::size_type size_type;
     typedef typename container_type::value_type value_type;
-    typedef typename boost::call_traits<value_type> param_type;
+    typedef typename boost::call_traits<value_type>::param_type param_type;
 
     explicit basic_bounded_buffer (size_type capacity_)
       : capacity (capacity_), unread (0), container (capacity_)

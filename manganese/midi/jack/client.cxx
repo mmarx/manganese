@@ -16,6 +16,8 @@
 
 #include <iostream>
 
+#include <jack/midiport.h>
+
 #include "client.hxx"
 
 namespace mn
@@ -28,34 +30,35 @@ namespace mn
   }
 
   JackClient::JackClient ()
-    : client (0), in_port (0)
+    : client_ (0), in_port_ (0),
+      in_queue_ (new inbounded_buffer<midi_event> (2048))
   {
     jack_status_t status;
-    client = jack_client_open ("manganese",
-			       JackNullOption,
-			       &status);
+    client_ = jack_client_open ("manganese",
+				JackNullOption,
+				&status);
 
-    in_port = jack_port_register (client,
-				  "midi in",
-				  JACK_DEFAULT_MIDI_TYPE,
-				  JackPortIsInput | JackPortIsTerminal,
-				  0);
+    in_port_ = jack_port_register (client_,
+				   "midi in",
+				   JACK_DEFAULT_MIDI_TYPE,
+				   JackPortIsInput | JackPortIsTerminal,
+				   0);
 
-    jack_set_process_callback (client, ::mn::process, this);
+    jack_set_process_callback (client_, ::mn::process, this);
 
-    jack_activate (client);
+    jack_activate (client_);
   }
 
   JackClient::~JackClient ()
   {
-    if (client)
+    if (client_)
       {
-	if (in_port)
+	if (in_port_)
 	  {
-	    jack_port_unregister (client, in_port);
+	    jack_port_unregister (client_, in_port_);
 	  }
 
-	jack_client_close (client);
+	jack_client_close (client_);
       }
   }
 
@@ -63,6 +66,53 @@ namespace mn
   JackClient::process (jack_nframes_t nframes)
   {
     // do something
+    void* port_buffer = jack_port_get_buffer (in_port_, nframes);
+    jack_nframes_t count = jack_midi_get_event_count (port_buffer);
+    
+    if (count)
+      {
+	std::cerr << "-!- JackClient::process(): got " << count << " events."
+		  << std::endl;
+
+	for (jack_nframes_t i = 0; i < count; ++i)
+	{
+	  jack_midi_event_t event;
+	  jack_midi_event_get (&event, port_buffer, i);
+
+	  std::cerr << "-!- JackClient::process(): got event `" << std::hex;
+	  for (size_t j = 0; j < event.size; ++j)
+	    {
+	      std::cerr << static_cast<unsigned int> (event.buffer[j])
+			<< (((j + 1) < event.size) ? " " : "'");
+	    }
+	  std::cerr << std::endl;
+
+	  unsigned char status_byte = event.buffer[0];
+	  unsigned char channel = status_byte & 0x0f;
+	  unsigned char event_type = status_byte & 0xf0;
+
+	  midi_event the_event (event_type, channel, 0, 0);
+	  
+	  switch (event_type)
+	    {
+	    case 0x80:
+	      std::cerr << "-\\- note off" << std::endl;
+	      the_event.key_ = event.buffer[1];
+	      in_queue_->push_front (the_event);
+	      break;
+	    case 0x90:
+	      std::cerr << "-\\- note on" << std::endl;
+	      the_event.key_ = event.buffer[1];
+	      the_event.value_ = event.buffer[2];
+	      in_queue_->push_front (the_event);
+	      break;
+	    default:
+	      std::cerr << "-\\- other" << std::endl;
+	      break;
+	    }
+	}
+      }
+	
     return 0;
   }
 }

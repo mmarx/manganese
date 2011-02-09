@@ -58,10 +58,9 @@ namespace mn
     void
     pop_back (value_type* item)
     {
-      item = container[--unread];
+      *item = container[--unread];
     }
 
-  protected:
     bool
     is_not_empty () const
     {
@@ -74,6 +73,7 @@ namespace mn
       return unread < capacity;
     }
 
+  protected:
     size_type unread;
     size_type capacity;
     container_type container;

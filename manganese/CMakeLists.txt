@@ -1,5 +1,5 @@
 # manganese - mutabor-ng platform runner
-# Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+# Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -36,5 +36,7 @@ python_extension(apps "apps/" "manganese/" PURE)
 python_extension(_apps "apps/_apps" "manganese/" PURE)
 python_extension(midi "midi/" "manganese/" PURE)
 python_extension(jack "midi/jack/" "manganese/")
+python_extension(event "midi/event/" "manganese/")
 
 target_link_libraries(jack ${JACK_LIBRARIES})
+target_link_libraries(jack ${Boost_THREAD_LIBRARY})

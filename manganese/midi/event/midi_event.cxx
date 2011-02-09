@@ -1,5 +1,5 @@
 /* manganese - mutabor-ng platform
- * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,29 +14,23 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef MANGANESE_MIDI_JACK_MIDI_EVENT_HXX
-#define MANGANESE_MIDI_JACK_MIDI_EVENT_HXX
+#include <boost/python.hpp>
+
+#include "midi_event.hxx"
 
 namespace mn
 {
-  struct midi_event
+  BOOST_PYTHON_MODULE (_event)
   {
-    midi_event (unsigned char type,
-		unsigned char channel,
-		unsigned char key,
-		unsigned char value)
-      : type_ (type),
-	channel_ (channel),
-	key_ (key),
-	value_ (value)
-    {
-    }
+    using namespace boost::python;
 
-    unsigned char type_;
-    unsigned char channel_;
-    unsigned char key_;
-    unsigned char value_;
-  };
+    class_<midi_event> ("midi_event",
+			init<unsigned char, unsigned char,
+			     unsigned char, unsigned char> ())
+      .def (init<midi_event const&> ())
+      .def_readwrite ("type", &midi_event::type_)
+      .def_readwrite ("channel", &midi_event::channel_)
+      .def_readwrite ("key", &midi_event::key_)
+      .def_readwrite ("value", &midi_event::value_);
+  }
 }
-
-#endif // MANGANESE_MIDI_JACK_MIDI_EVENT_HXX

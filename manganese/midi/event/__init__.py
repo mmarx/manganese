@@ -1,5 +1,5 @@
 # manganese - mutabor-ng platform
-# Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+# Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -13,24 +13,20 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-project(manganese)
-cmake_minimum_required(VERSION 2.8)
+from _event import midi_event as event
+from classifier import EventClassifier
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
-# find python
-set(CMAKE_PYTHON_VERSIONS 2.6)
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
+def _describe_type(self):
+    return EventClassifier()[self.type]
 
-# find boost
-set(BOOST_MULTITHREADED ON)
-set(BOOST_USE_STATIC_LIBS OFF)
-set(BOOST_ADDITIONAL_VERSIONS "1.42" "1.42.0")
 
-find_package(Boost 1.42.0 REQUIRED COMPONENTS python program_options thread)
-include_directories(${Boost_INCLUDE_DIRS})
+def _event_repr(self):
+    return ("<midi event of type %(type)0x (%(typestring)s) on "
+            "channel %(channel)d>") % {'type': self.type,
+                                       'typestring': self.describe_type(),
+                                       'channel': self.channel,
+                                       }
 
-add_subdirectory(manganese)
-add_subdirectory(lithium)
-add_subdirectory(vismut)
+event.__repr__ = _event_repr
+event.describe_type = _describe_type

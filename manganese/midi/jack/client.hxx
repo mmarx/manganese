@@ -21,7 +21,7 @@
 
 #include <jack/jack.h>
 
-#include "midi_event.hxx"
+#include "../event/midi_event.hxx"
 #include "bounded_buffer.hxx"
 
 namespace mn
@@ -35,6 +35,12 @@ namespace mn
 
     int
     process (jack_nframes_t nframes);
+
+    bool
+    have_events ();
+
+    midi_event
+    next_event ();
 
   private:
     jack_client_t* client_;

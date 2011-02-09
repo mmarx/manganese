@@ -1,5 +1,5 @@
-# manganese - mutabor-ng platform
-# Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+# testwurst - mutabor-ng platform test application
+# Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -13,24 +13,19 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-project(manganese)
-cmake_minimum_required(VERSION 2.8)
+import time
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
+import _apps
 
-# find python
-set(CMAKE_PYTHON_VERSIONS 2.6)
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
+import manganese.midi as midi
+import manganese.midi.jack
 
-# find boost
-set(BOOST_MULTITHREADED ON)
-set(BOOST_USE_STATIC_LIBS OFF)
-set(BOOST_ADDITIONAL_VERSIONS "1.42" "1.42.0")
 
-find_package(Boost 1.42.0 REQUIRED COMPONENTS python program_options thread)
-include_directories(${Boost_INCLUDE_DIRS})
+class Application(_apps.Application):
 
-add_subdirectory(manganese)
-add_subdirectory(lithium)
-add_subdirectory(vismut)
+    def run(self):
+        with midi.jack.create_client() as client:
+            for i in range(1, 300):
+                if client.have_events:
+                    print client.next_event()
+                time.sleep(1)

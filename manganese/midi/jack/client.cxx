@@ -62,6 +62,22 @@ namespace mn
       }
   }
 
+  bool
+  JackClient::have_events ()
+  {
+    return in_queue_->is_not_empty ();
+  }
+
+  midi_event
+  JackClient::next_event ()
+  {
+    midi_event event;
+
+    in_queue_->pop_back (&event);
+
+    return event;
+  }
+
   int
   JackClient::process (jack_nframes_t nframes)
   {

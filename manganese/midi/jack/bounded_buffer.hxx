@@ -1,5 +1,5 @@
 /* manganese - mutabor-ng platform
- * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -106,6 +106,8 @@ namespace mn
 	}
 
       lock.unlock ();
+
+      not_empty.notify_one ();
     }
 
     void

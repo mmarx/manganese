@@ -13,26 +13,22 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from contextlib import contextmanager
-
-import _jack
-from event import Event
+from classifier import EventClassifier
 
 
-@contextmanager
-def create_client():
-    client = _jack.create_client()
-    try:
-        yield client
-    finally:
-        _jack.destroy_client(client)
+class Event(object):
 
+    def __init__(self, event):
+        self.raw = event
+        self.type = event[0] & 0xf0
+        self.channel = event[0] & 0x0f
 
-_get_next_event = _jack.JackClient.next_event
+    def describe_type(self):
+        return EventClassifier()[self.type]
 
-
-def _next_event(self):
-    return Event(_get_next_event(self))
-
-
-_jack.JackClient.next_event = _next_event
+    def __repr__(self):
+        return ("<midi event of type %(type)0x (%(typestring)s) on "
+                "channel %(channel)d>") % {'type': self.type,
+                                           'typestring': self.describe_type(),
+                                           'channel': self.channel,
+                                           }

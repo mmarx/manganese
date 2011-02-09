@@ -74,6 +74,8 @@ namespace mn
     py::list the_event = py::list();
     midi_event event;
 
+    int j = 0;
+
     do
       {
 	in_queue_->pop_back (&event);
@@ -111,7 +113,7 @@ namespace mn
 	    else
 	      {
 		// split it up
-		in_queue_->push_front (midi_event (event.buffer, true));
+		in_queue_->push_front (midi_event (event.buffer, 3, true));
 
 		size_t i = 3;
 		for (; i < (size - 3); i += 3)
@@ -121,7 +123,7 @@ namespace mn
 		  }
 
 		in_queue_->push_front (midi_event ((event.buffer + i),
-						   (size - i), true, false));
+						   (size - i), false, true));
 	      }
 	  }
       }

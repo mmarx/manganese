@@ -25,7 +25,6 @@ class Application(_apps.Application):
 
     def run(self):
         with midi.jack.create_client() as client:
-            for i in range(1, 300):
+            while True:
                 if client.have_events:
                     print client.next_event()
-                time.sleep(1)

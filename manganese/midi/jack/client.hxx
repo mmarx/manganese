@@ -21,7 +21,7 @@
 
 #include <jack/jack.h>
 
-#include "../event/midi_event.hxx"
+#include "midi_event.hxx"
 #include "bounded_buffer.hxx"
 
 namespace mn

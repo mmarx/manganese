@@ -87,21 +87,10 @@ namespace mn
 
     if (count)
       {
-	std::cerr << "-!- JackClient::process(): got " << count << " events."
-		  << std::endl;
-
 	for (jack_nframes_t i = 0; i < count; ++i)
 	{
 	  jack_midi_event_t event;
 	  jack_midi_event_get (&event, port_buffer, i);
-
-	  std::cerr << "-!- JackClient::process(): got event `" << std::hex;
-	  for (size_t j = 0; j < event.size; ++j)
-	    {
-	      std::cerr << static_cast<unsigned int> (event.buffer[j])
-			<< (((j + 1) < event.size) ? " " : "'");
-	    }
-	  std::cerr << std::endl;
 
 	  unsigned char status_byte = event.buffer[0];
 	  unsigned char channel = status_byte & 0x0f;
@@ -112,18 +101,15 @@ namespace mn
 	  switch (event_type)
 	    {
 	    case 0x80:
-	      std::cerr << "-\\- note off" << std::endl;
 	      the_event.key_ = event.buffer[1];
 	      in_queue_->push_front (the_event);
 	      break;
 	    case 0x90:
-	      std::cerr << "-\\- note on" << std::endl;
 	      the_event.key_ = event.buffer[1];
 	      the_event.value_ = event.buffer[2];
 	      in_queue_->push_front (the_event);
 	      break;
 	    default:
-	      std::cerr << "-\\- other" << std::endl;
 	      break;
 	    }
 	}

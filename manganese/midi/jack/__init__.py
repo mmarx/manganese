@@ -1,5 +1,5 @@
 # manganese - mutabor-ng platform
-# Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+# Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -16,6 +16,8 @@
 from contextlib import contextmanager
 
 import _jack
+from _jack import midi_event as event
+from classifier import EventClassifier
 
 
 @contextmanager
@@ -25,3 +27,18 @@ def create_client():
         yield client
     finally:
         _jack.destroy_client(client)
+
+
+def _describe_type(self):
+    return EventClassifier()[self.type]
+
+
+def _event_repr(self):
+    return ("<midi event of type %(type)0x (%(typestring)s) on "
+            "channel %(channel)d>") % {'type': self.type,
+                                       'typestring': self.describe_type(),
+                                       'channel': self.channel,
+                                       }
+
+event.__repr__ = _event_repr
+event.describe_type = _describe_type

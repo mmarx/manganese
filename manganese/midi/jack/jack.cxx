@@ -1,5 +1,5 @@
 /* manganese - mutabor-ng platform
- * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -48,5 +48,14 @@ namespace mn
       .def_readonly ("have_events", &JackClient::have_events)
       .def ("next_event", &JackClient::next_event,
 	    return_value_policy<return_by_value> ());
+
+    class_<midi_event> ("midi_event",
+			init<unsigned char, unsigned char,
+			     unsigned char, unsigned char> ())
+      .def (init<midi_event const&> ())
+      .def_readwrite ("type", &midi_event::type_)
+      .def_readwrite ("channel", &midi_event::channel_)
+      .def_readwrite ("key", &midi_event::key_)
+      .def_readwrite ("value", &midi_event::value_);
   }
 }

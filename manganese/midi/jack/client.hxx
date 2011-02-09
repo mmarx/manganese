@@ -1,5 +1,5 @@
 /* manganese - mutabor-ng platform
- * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -18,6 +18,7 @@
 #define MANGANESE_MIDI_JACK_CLIENT_HXX
 
 #include <boost/shared_ptr.hpp>
+#include <boost/python.hpp>
 
 #include <jack/jack.h>
 
@@ -26,6 +27,8 @@
 
 namespace mn
 {
+  namespace py = boost::python;
+
   class
   JackClient
   {
@@ -39,7 +42,7 @@ namespace mn
     bool
     have_events ();
 
-    midi_event
+    py::object
     next_event ();
 
   private:

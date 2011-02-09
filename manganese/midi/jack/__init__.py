@@ -16,7 +16,6 @@
 from contextlib import contextmanager
 
 import _jack
-from _jack import midi_event as event
 from classifier import EventClassifier
 
 
@@ -40,5 +39,6 @@ def _event_repr(self):
                                        'channel': self.channel,
                                        }
 
-event.__repr__ = _event_repr
-event.describe_type = _describe_type
+
+#event.__repr__ = _event_raw
+#event.describe_type = _describe_type

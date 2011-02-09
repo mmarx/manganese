@@ -1,5 +1,5 @@
 /* manganese - mutabor-ng platform
- * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -7,7 +7,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+n * MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
  * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
@@ -21,10 +21,31 @@ namespace mn
 {
   struct midi_event
   {
-    
-    unsigned char data[4];
-    bool continued;
-    bool continuation;
+    midi_event ()
+      : size_ (0),
+	continued_ (false),
+	continuation_ (false)
+    {
+    }
+
+    midi_event (unsigned char* data,
+		size_t size,
+		bool continued = false,
+		bool continuation = false)
+      : size_ (size),
+	continued_ (continued),
+	continuation_ (continuation)
+    {
+      for (size_t i = 0; i < size; ++i)
+	{
+	  data_[i] = data[i];
+	}
+    }
+
+    unsigned char data_[3];
+    size_t size_;
+    bool continued_;
+    bool continuation_;
   };
 }
 

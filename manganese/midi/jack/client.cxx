@@ -1,5 +1,5 @@
 /* manganese - mutabor-ng platform
- * Copyright (c) 2010, Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, Maximilian Marx <mmarx@wh2.tu-dresden.de>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -68,51 +68,62 @@ namespace mn
     return in_queue_->is_not_empty ();
   }
 
-  midi_event
+  py::object
   JackClient::next_event ()
   {
+    py::list the_event = py::list();
     midi_event event;
 
-    in_queue_->pop_back (&event);
+    do
+      {
+	in_queue_->pop_back (&event);
 
-    return event;
+	for (size_t i = 0; i < event.size_; ++i)
+	  {
+	    the_event.append (event.data_[i]);
+	  }
+      }
+    while (event.continued_);
+
+    return the_event;
   }
 
   int
   JackClient::process (jack_nframes_t nframes)
   {
-    // do something
     void* port_buffer = jack_port_get_buffer (in_port_, nframes);
     jack_nframes_t count = jack_midi_get_event_count (port_buffer);
 
     if (count)
       {
 	for (jack_nframes_t i = 0; i < count; ++i)
-	{
-	  jack_midi_event_t event;
-	  jack_midi_event_get (&event, port_buffer, i);
+	  {
+	    jack_midi_event_t event;
+	    jack_midi_event_get (&event, port_buffer, i);
 
-	  unsigned char status_byte = event.buffer[0];
-	  unsigned char channel = status_byte & 0x0f;
-	  unsigned char event_type = status_byte & 0xf0;
+	    size_t size = event.size;
 
-	  midi_event the_event (event_type, channel, 0, 0);
+	    if (size <= 3)
+	      {
+		// single-message event
+		in_queue_->push_front (midi_event (event.buffer, size));
+	      }
+	    else
+	      {
+		// split it up
+		in_queue_->push_front (midi_event (event.buffer, true));
 
-	  switch (event_type)
-	    {
-	    case 0x80:
-	      the_event.key_ = event.buffer[1];
-	      in_queue_->push_front (the_event);
-	      break;
-	    case 0x90:
-	      the_event.key_ = event.buffer[1];
-	      the_event.value_ = event.buffer[2];
-	      in_queue_->push_front (the_event);
-	      break;
-	    default:
-	      break;
-	    }
-	}
+		size_t i = 3;
+		for (; i < (size - 3); i += 3)
+		  {
+		    in_queue_->push_front (midi_event ((event.buffer + i),
+						       3, true, true));
+		  }
+
+		in_queue_->push_front (midi_event ((event.buffer + i),
+						   (size - i), true, false));
+	      }
+	  }
       }
 
     return 0;

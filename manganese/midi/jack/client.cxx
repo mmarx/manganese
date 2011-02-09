@@ -68,7 +68,7 @@ namespace mn
     // do something
     void* port_buffer = jack_port_get_buffer (in_port_, nframes);
     jack_nframes_t count = jack_midi_get_event_count (port_buffer);
-    
+
     if (count)
       {
 	std::cerr << "-!- JackClient::process(): got " << count << " events."
@@ -92,7 +92,7 @@ namespace mn
 	  unsigned char event_type = status_byte & 0xf0;
 
 	  midi_event the_event (event_type, channel, 0, 0);
-	  
+
 	  switch (event_type)
 	    {
 	    case 0x80:
@@ -112,7 +112,7 @@ namespace mn
 	    }
 	}
       }
-	
+
     return 0;
   }
 }

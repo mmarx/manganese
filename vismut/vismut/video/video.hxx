@@ -18,6 +18,7 @@
  * 02110-1301 USA.
  ********************************************************************/
 
+
 #ifndef VISMUT_VIDEO_VIDEO_HXX
 #define VISMUT_VIDEO_VIDEO_HXX
 

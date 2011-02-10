@@ -18,6 +18,7 @@
  * 02110-1301 USA.
  ********************************************************************/
 
+
 #ifndef MANGANESE_MIDI_JACK_MIDI_EVENT_HXX
 #define MANGANESE_MIDI_JACK_MIDI_EVENT_HXX
 

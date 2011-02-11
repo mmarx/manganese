@@ -21,3 +21,6 @@
 include(PythonExtension)
 
 python_extension(utabor "utabor/" "manganese/")
+
+file(GLOB UTABOR_DATA data/*.mut)
+install(FILES ${UTABOR_DATA} DESTINATION data/utabor/)

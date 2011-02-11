@@ -18,6 +18,7 @@
 # 02110-1301 USA.
 ######################################################################
 
+import sys
 
 import manganese.config as config
 
@@ -27,6 +28,9 @@ class Application(object):
         self.args = args
         self.config = config.load(app=args[0])
         print "Hello, World! (from managenese application framework)"
+
+    def prefix(self):
+        return sys.path[-1]
 
     def cfg(self, key, default):
         if key in self.config:

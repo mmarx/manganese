@@ -1,18 +1,18 @@
+// cannibalised from upstream mutabor --mmarx
+
 // ------------------------------------------------------------------
 // Mutabor 3, 1998, R.Krauﬂe
 // Berechnungen der Stimmungen in den Boxen
 // ------------------------------------------------------------------
-#include "Defs.h"
+#include "defs.hxx"
 #include <math.h>
-#ifndef MUTWIN
-#include <conio.h>
-#endif
+#include <string.h>
 
-#include "Global.h"
-#include "Interpre.h"
-#include "GrafKern.h"
-#include "MidiKern.h"
-#include "Runtime.h"
+#include "global.hxx"
+#include "interpreter.hxx"
+#include "grafkern.hxx"
+#include "midikern.hxx"
+#include "runtime.hxx"
 
 int protokollfunktionen_aktiv=0;
 int protokollfunktion_aktionsausgabe=0;
@@ -24,9 +24,11 @@ int zeige_aktuelles_tonsystem=0;
 #define KEY_CHANGED(instrument) { keys_changed[instrument]=1; keys_changed_sum = 1; }
 
 // in device.h :
+#if 0
 void MidiOut(int box, DWORD data, char n);
 void NotesCorrect(int box);
 int  GetChannel(int box, int taste);
+#endif
 
 PATTERNN pattern[MAX_BOX];         /* Die momentan gespielte Harmonie */
 ton_system tonsystem_memory[MAX_BOX+1];  /* Der Platz fÅr die tatsÑchlichen
@@ -338,18 +340,18 @@ void execute_aktion (int instrument, struct do_aktion * aktion)
 				n++;
 			}
 
-			MidiOut(instrument, data, n);
+			//			MidiOut(instrument, data, n);
 		}
 
 		break;
 
 		case aufruf_umst_umst_bund:
-			wxLogWarning(_("Unhandled case path: aufruf_umst_umst_bund"));
+		  fprintf(stderr, _("Unhandled case path: aufruf_umst_umst_bund"));
 
 			break;
 
 		default:
-			wxLogError(_("Unexpected action type: %d"), aktion->aufruf_typ);
+		  fprintf(stderr, _("Unexpected action type: %d"), aktion->aufruf_typ);
 		}
 	}
 
@@ -357,9 +359,11 @@ void execute_aktion (int instrument, struct do_aktion * aktion)
 	if ( WasNewLogic )
 		HarmonyAnalysis(instrument, &pattern[instrument]);
 
+#if 0
 #ifndef NOTES_CORRECT_SOFORT
 	NotesCorrect(instrument);
 
+#endif
 #endif
 }
 
@@ -671,7 +675,7 @@ void protokoll_aktuelles_tonsystem( int instr )
 	exit_laufzeit_protokoll( );
 }
 
-#define SHOW_CHANNEL
+//#define SHOW_CHANNEL
 void protokoll_liegende_frequenzen( int instr )
 {
 	ton_system * tonsys = tonsystem[instr];

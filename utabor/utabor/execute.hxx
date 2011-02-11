@@ -5,7 +5,7 @@
 #ifndef EXECUTE_H
 #define EXECUTE_H
 
-#include "Interpre.h"
+#include "interpreter.hxx"
 
 void KeyboardIn(int box, const mutChar *keys);
 

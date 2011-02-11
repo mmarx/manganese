@@ -21,7 +21,7 @@ int zeige_aktuelles_tonsystem=0;
 //#define KEY_WATCH  //protokoll in keys_changed // alte Vaiante
 
 // wenn kein Protokoll gew¸nscht, dann diese Definition auf "Leer" setzen
-#define KEY_CHANGED(instrument) { keys_changed[instrument]=1; keys_changed_sum = 1; }
+#define KEY_CHANGED(instrument) { keys_changed[instrument]=1; keys_changed_sum = 1; key_changed_callback (instrument); }
 
 // in device.h :
 #if 0
@@ -382,6 +382,8 @@ void update_pattern(int instr)
 
 void change_anker(int instr, int neu)
 {
+  anchor_changed_callback (instr, neu);
+
 	ton_system * tonsys = tonsystem[instr];
 	ton_system * temp = tonsys;
 	int i;
@@ -417,6 +419,7 @@ void change_anker(int instr, int neu)
 
 void change_breite(int instr, int neu)
 {
+  width_changed_callback (instr, neu);
 	ton_system * tonsys = tonsystem[instr];
 	int i;
 

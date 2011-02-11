@@ -17,6 +17,8 @@
 #include <setjmp.h>
 
 typedef void UpdateUICallback();
+typedef void KeyChangedCallback (int);
+typedef void ParameterChangedCallback (int, int);
 
 extern "C"
 {
@@ -24,10 +26,18 @@ extern "C"
 
 	extern jmp_buf weiter_gehts_nach_compilerfehler;
 	extern UpdateUICallback* updateUIcallback;
+  extern KeyChangedCallback* key_changed_callback;
+  extern ParameterChangedCallback* anchor_changed_callback;
+  extern ParameterChangedCallback* width_changed_callback;
 
 	char pascal Compile( void *compWin, const char *name );
 
-	bool pascal Activate(bool realTime, UpdateUICallback* callback = 0);
+  bool pascal
+  Activate(bool realTime,
+	   UpdateUICallback* callback,
+	   KeyChangedCallback* key_change,
+	   ParameterChangedCallback* anchor_change,
+	   ParameterChangedCallback* width_change);
 	void pascal Stop();
 	void pascal Panic();
 

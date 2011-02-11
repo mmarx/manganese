@@ -145,12 +145,23 @@ extern "C"
 	}
 
 	UpdateUICallback* updateUIcallback;
+  KeyChangedCallback* key_changed_callback;
+  ParameterChangedCallback* anchor_changed_callback;
+  ParameterChangedCallback* width_changed_callback;
 
-	bool pascal _export Activate(bool realTime, UpdateUICallback* callback) {
+  bool pascal _export
+  Activate(bool realTime,
+	   UpdateUICallback* callback,
+	   KeyChangedCallback* key_change,
+	   ParameterChangedCallback* anchor_change,
+	   ParameterChangedCallback* width_change) {
 		RealTime = realTime;
 		GlobalReset();
 		AktionenInit();
 		updateUIcallback = callback;
+		key_changed_callback = key_change;
+		anchor_changed_callback = anchor_change;
+		width_changed_callback = width_change;
 #if 0
 #if !defined(WX) || defined(__WXMSW__)
 

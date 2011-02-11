@@ -49,41 +49,6 @@ handle_midi (DWORD midiCode)
   FlushUpdateUI ();
 }
 
-// cannibalised from protokoll_aktuelles_tonsystem ()
-void
-print_tone_system ()
-{
-  using std::cerr;
-  using std::endl;
-
-  int const box = 0;
-
-  ton_system* ts = tonsystem[box];
-  long freq;
-  unsigned char* ptr = reinterpret_cast<unsigned char*> (&freq);
-
-  cerr << "-+- tone system:" << endl
-       << "-+-  anchor: " << ts->anker << endl
-       << "-+-  width: " << ts->breite << endl
-       << "-+-  period: " << LONG_TO_CENT (ts->periode) << " cent" << endl;
-
-  for (int i = 0; i < ts->breite; ++i)
-    {
-      cerr << "-+-  " << i << ": ";
-      if ((freq = ts->ton[i]) != 0)
-	{
-	  cerr << LONG_TO_HERTZ (freq) << " Hz ("
-	       << ptr[3] + (static_cast<float> (ptr[2]) / 256.0)
-	       << ")";
-	}
-      else
-	{
-	  cerr << "%";
-	}
-      cerr << endl;
-    }
-}
-
 namespace ut
 {
   namespace py = boost::python;
@@ -182,6 +147,7 @@ namespace ut
     return the_keys;
   }
 
+  // adapted from protokoll_aktuelles_tonsystem ()
   py::object
   uTabor::tone_system ()
   {

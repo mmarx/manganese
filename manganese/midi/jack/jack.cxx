@@ -38,7 +38,7 @@ namespace mn
   destroy_client (std::auto_ptr<JackClient> client)
   {
     client.reset ();
-  };
+  }
 
   BOOST_PYTHON_MODULE (_jack)
   {

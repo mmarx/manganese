@@ -19,8 +19,6 @@
 ######################################################################
 
 
-import time
-
 import _apps
 
 import manganese.midi as midi

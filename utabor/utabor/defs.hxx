@@ -67,7 +67,7 @@
 #define MIDI_MAX_KEY 0x7f
 
 typedef uint8_t BYTE;
-typedef uint16_t DWORD;
+typedef uint32_t DWORD;
 
 typedef char wxChar;
 typedef char mutTranslationChar;

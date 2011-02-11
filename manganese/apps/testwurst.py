@@ -33,4 +33,5 @@ class Application(_apps.Application):
         with midi.jack.create_client() as client:
             while True:
                 if client.have_events:
-                    print client.next_event()
+                    event = client.next_event()
+                    print event, ": ", repr(event)

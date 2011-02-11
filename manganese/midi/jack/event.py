@@ -32,9 +32,12 @@ class Event(object):
     def describe_type(self):
         return EventClassifier()[self.type]
 
-    def __repr__(self):
+    def __str__(self):
         return ("<midi event of type %(type)0x (%(typestring)s) on "
                 "channel %(channel)d>") % {'type': self.type,
                                            'typestring': self.describe_type(),
                                            'channel': self.channel,
                                            }
+
+    def __repr__(self):
+        return ('[' + ', '.join([hex(byte) for byte in self.raw]) + ']')

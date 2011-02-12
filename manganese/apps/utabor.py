@@ -1,10 +1,11 @@
 
-import pprint
 import os.path
 
 import _apps
 
 import manganese.utabor._utabor as utabor
+import manganese.midi.pitch as pitch
+import manganese.utabor.net as net
 
 
 class Application(_apps.Application):
@@ -28,13 +29,18 @@ class Application(_apps.Application):
         logic = os.path.join(self.prefix(), 'data', 'utabor', 'demo.mut')
         ut.load_logic(logic)
         ut.select_action('N', True)
-
-        pp = pprint.PrettyPrinter(indent=2)
-
-        pp.pprint(ut.tone_system)
+        print '-!- initial tone net:'
+        tn = net.ToneNet(pitch.PitchClassifier(naming=pitch.NamingDE))
+        tn.print_net()
 
         for word in self.midi:
             ut.handle_midi(word)
-            print ut.width, ut.anchor, ut.keys
+            if ut.anchor_changed:
+                tn.move(ut.anchor)
+                print '-!- anchor changed'
 
-        pp.pprint(ut.tone_system)
+            if ut.keys_changed:
+                print '-!- keys changed'
+
+            if ut.need_update:
+                tn.print_net(mark=ut.keys)

@@ -80,8 +80,8 @@ namespace ut
     void
     anchor (int anchor)
     {
+      anchor_changed_ = (anchor != anchor_);
       anchor_ = anchor;
-      anchor_changed_ = true;
     }
 
     bool

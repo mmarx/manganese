@@ -75,24 +75,25 @@ class Application(_apps.Application):
              0x00004380,
             ]
 
-    midi = midi0
+    midi = midi2
 
-    default_colors = {'screen_bg': (0, 0, 0),
-                      'screen_fg': (255, 255, 255),
-                      'key_bg': {'active': (255, 0, 0),
-                                 'inactive': (200, 0, 0),
-                                 'anchor': (200, 150, 150),
-                                 'anchor_active': (255, 200, 200),
+    default_colors = {'screen_bg': (255, 255, 255),
+                      'screen_fg': (0, 0, 0),
+                      'key_bg': {'active': (180, 220, 250),
+                                 'inactive': (180, 180, 250),
+                                 'anchor': (220, 180, 250),
+                                 'anchor_active': (220, 220, 250),
                                  },
-                      'key_fg': (255, 255, 255),
+                      'key_fg': (80, 80, 80),
                       'chord_bg': {'major': (255, 255, 0),
-                                   'minor': (0, 255, 255),
+                                   'minor': (255, 200, 0),
                                    },
                       }
 
     rows = 7
-    max_fps = 60
-    once = True
+    max_fps = 30
+    accelerate = 1
+    once = False
 
     def _parse_mode(self, mode):
         if isinstance(mode, basestring):
@@ -187,7 +188,8 @@ class Application(_apps.Application):
         width, height = self.node_size
         x, y = self.node_center
         node = pygame.surface.Surface(self.node_size,
-                                      flags=pygame.SRCALPHA).convert()
+                                      flags=pygame.SRCALPHA).convert_alpha()
+        node.fill((0, 0, 0, 0))
 
         color = self._color('key', 'bg', self._node_type(row, column))
 
@@ -343,7 +345,7 @@ class Application(_apps.Application):
                 elif event.type == pygame.VIDEORESIZE:
                     self.resize((event.w, event.h))
 
-            if midi_frames > self.max_fps // 4:
+            if midi_frames > self.max_fps // self.accelerate:
                 midi_frames = 0
                 midi_current = (midi_current + 1)
 

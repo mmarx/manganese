@@ -94,6 +94,11 @@ class Application(_apps.Application):
     max_fps = 30
     accelerate = 1
     once = False
+    max_fps = 60
+
+    anchor = 60
+    anchor_row = -1
+    anchor_column = 8
 
     def _parse_mode(self, mode):
         if isinstance(mode, basestring):
@@ -162,7 +167,7 @@ class Application(_apps.Application):
         return (row, column)
 
     def _node_type(self, row, column):
-        anchor = y, x = self._coord_from_midi(self.ut.anchor)
+        anchor = y, x = (self.anchor_row, self.anchor_column)
 
         is_anchor = False
 
@@ -170,8 +175,7 @@ class Application(_apps.Application):
             is_anchor = True
 
         for key in self.ut.keys:
-            rel_x, rel_y = self.tn.coordinates((key - (self.ut.anchor % 12))
-                                               % 12)
+            rel_x, rel_y = self.tn.coordinates((key - (self.anchor % 12)) % 12)
 
             if ((x + rel_x) % 13, y + rel_y) == (column, row):
                 if is_anchor:
@@ -228,22 +232,21 @@ class Application(_apps.Application):
             rows -= 1
 
         width, height = self.node_size
-        anchor_row, anchor_column = self._coord_from_midi(self.ut.anchor)
-        x, y = anchor_column * width, (2 - anchor_row) * height
-        
+        x, y = self.anchor_column * width, (2 - self.anchor_row) * height
+
         if len(self.ut.keys) == 3:
             # FIXME this should work for > 3 keys
 
             nodes = []
 
             for key in self.ut.keys:
-                nodes.append(self.tn.coordinates((key - (self.ut.anchor %
-                                                         12)) % 12))
-                
+                nodes.append(self.tn.coordinates((key -
+                                                  (self.anchor % 12)) % 12))
+
             i = 0
             j = -1
             k = -1
-            
+
             for index in [1, 2]:
                 if nodes[i][1] == nodes[index][1]:
                     j = index
@@ -359,7 +362,14 @@ class Application(_apps.Application):
                 self.ut.handle_midi(self.midi[midi_current])
 
                 if self.ut.anchor_changed:
-                    self.tn.move(self.ut.anchor)
+                    anchor = self.ut.anchor
+                    if anchor != self.anchor:
+                        distance = anchor - self.anchor
+                        self.tn.move(anchor)
+                        self.anchor = anchor
+                        x, y = self.tn.coordinates(distance % 12)
+                        self.anchor_column += x
+                        self.anchor_row += y
 
                 if self.ut.need_update:
                     self.tn.print_net(mark=self.ut.keys)

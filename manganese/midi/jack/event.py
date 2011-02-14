@@ -32,6 +32,22 @@ class Event(object):
     def describe_type(self):
         return EventClassifier()[self.type]
 
+    def as_dword(self):
+        length = len(self.raw)
+
+        if length > 4:
+            raise OverflowError
+
+        dword = 0x00000000
+
+        while length > 0:
+            length -= 1
+            dword |= self.raw[length]
+            if length > 0:
+                dword <<= 8
+
+        return dword
+
     def __str__(self):
         return ("<midi event of type %(type)0x (%(typestring)s) on "
                 "channel %(channel)d>") % {'type': self.type,

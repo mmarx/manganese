@@ -10,72 +10,11 @@ import _apps
 
 import manganese.utabor._utabor as utabor
 import manganese.midi.pitch as pitch
+import manganese.midi.jack as jack
 import manganese.utabor.net as net
 
 
 class Application(_apps.Application):
-
-    midi0 = [0x00513090,
-             0x00513490,
-             0x00513790,
-             0x00003080,
-             0x00003480,
-             0x00003780,
-             0x00512d90,
-             0x00513190,
-             0x00513490,
-             0x00002d80,
-             0x00003180,
-             0x00003480,
-            ]
-
-    midi1 = [0x00513090,
-             0x00513490,
-             0x00513790,
-             0x00003080,
-             0x00003480,
-             0x00003780,
-             0x00512d90,
-             0x00513090,
-             0x00513490,
-             0x00002d80,
-             0x00003080,
-             0x00003480,
-            ]
-
-    midi2 = [0x00513090,
-             0x00513490,
-             0x00513790,
-             0x00003080,
-             0x00003480,
-             0x00003780,
-             0x00513590,
-             0x00513990,
-             0x00513c90,
-             0x00003580,
-             0x00003980,
-             0x00003c80,
-             0x00513290,
-             0x00513590,
-             0x00513990,
-             0x00003280,
-             0x00003580,
-             0x00003980,
-             0x00513790,
-             0x00513b90,
-             0x00513e90,
-             0x00003780,
-             0x00003b80,
-             0x00003e80,
-             0x00513c90,
-             0x00514090,
-             0x00514390,
-             0x00003c80,
-             0x00004080,
-             0x00004380,
-            ]
-
-    midi = midi2
 
     default_colors = {'screen_bg': (255, 255, 255),
                       'screen_fg': (0, 0, 0),
@@ -91,9 +30,6 @@ class Application(_apps.Application):
                       }
 
     rows = 7
-    max_fps = 30
-    accelerate = 1
-    once = False
     max_fps = 60
 
     anchor = 60
@@ -338,52 +274,45 @@ class Application(_apps.Application):
 
         running = True
 
-        midi_current = -1
-        midi_frames = self.max_fps + 1
+        with jack.create_client() as jack_client:
+            while running:
+                self.clock.tick(self.max_fps)
 
-        while running:
-            self.clock.tick(self.max_fps)
-            midi_frames += 1
+                eventful = False
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
                         running = False
-                elif event.type == pygame.VIDEORESIZE:
-                    self.resize((event.w, event.h))
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            running = False
+                    elif event.type == pygame.VIDEORESIZE:
+                        self.resize((event.w, event.h))
 
-            if midi_frames > self.max_fps // self.accelerate:
-                midi_frames = 0
-                midi_current = (midi_current + 1)
+                while jack_client.have_events:
+                    event = jack_client.next_event()
 
-                if midi_current >= len(self.midi):
-                    if self.once:
-                        running = False
-                        continue
-                    else:
-                        midi_current = 0
+                    if len(event.raw) <= 4:
+                        self.ut.handle_midi(event.as_dword())
 
-                self.ut.handle_midi(self.midi[midi_current])
+                        if self.ut.anchor_changed:
+                            anchor = self.ut.anchor
+                            if anchor != self.anchor:
+                                distance = anchor - self.anchor
+                                self.tn.move(anchor)
+                                x, y = self.tn.coordinates(distance % 12)
 
-                if self.ut.anchor_changed:
-                    anchor = self.ut.anchor
-                    if anchor != self.anchor:
-                        distance = anchor - self.anchor
-                        self.tn.move(anchor)
-                        self.anchor = anchor
-                        x, y = self.tn.coordinates(distance % 12)
-                        self.anchor_column += x
-                        self.anchor_row += y
+                                self.anchor = anchor
+                                self.anchor_column += x
+                                self.anchor_row += y
 
-                if self.ut.need_update:
-                    self.tn.print_net(mark=self.ut.keys)
-                    print
+                    if eventful and self.ut.need_update:
+                        self.tn.print_net(mark=self.ut.keys)
+                        print
 
-            self.screen.fill(self._color('screen', 'bg'))
-            self.draw_net()
-            pygame.display.flip()
+                self.screen.fill(self._color('screen', 'bg'))
+                self.draw_net()
+                pygame.display.flip()
 
         utabor.destroy_uTabor()
         sys.exit()

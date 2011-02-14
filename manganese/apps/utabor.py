@@ -129,6 +129,20 @@ class Application(_apps.Application):
         return column * 7 + 4 * (row - 1)
 
     def _pitch(self, row, column):
+        pitches = [
+            ['his', 'fisis', 'cisis', 'gisis', 'disis', 'aisis', 'eisis', 'hisis', 'fisisis', 'cisisis', 'gisisis', 'disisis', 'aisisis', 'eisisis'],
+            ['gis', 'dis', 'ais', 'eis', 'his', 'fisis', 'cisis', 'gisis', 'disis', 'aisis', 'eisis', 'hisis', 'fisisis', 'cisisis'],
+            ['e', 'h', 'fis', 'cis', 'gis', 'dis', 'ais', 'eis', 'his', 'fisis', 'cisis', 'gisis', 'disis', 'aisis'],
+            ['c', 'g', 'd', 'a', 'e', 'h', 'fis', 'cis', 'gis', 'dis', 'ais', 'eis', 'his', 'fisis'],
+            ['as', 'es', 'b', 'f', 'c', 'g', 'd', 'a', 'e', 'h', 'fis', 'cis', 'gis', 'dis'],
+            ['fes', 'ces', 'ges', 'des', 'as', 'es', 'b', 'f', 'c', 'g', 'd', 'a', 'e', 'h'],
+            ['deses', 'asas', 'eses', 'heses', 'fes', 'ces', 'ges', 'des', 'as', 'es', 'b', 'f', 'c', 'g'],
+            ['heses', 'feses', 'ceses', 'geses', 'deses', 'asas', 'eses', 'heses', 'fes', 'ces', 'ges', 'des', 'as', 'es'],
+            ['geseses', 'deseses', 'asasas', 'eseses', 'heseses', 'feses', 'ceses', 'geses', 'deses', 'asas', 'eses', 'heses', 'fes', 'ces'],
+            ]
+
+        return pitches[(4 - row)][column]
+
         classifier = self.tn.pitchClassifier
 
         if row > 0 or (row == 0 and column >= 3):

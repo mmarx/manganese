@@ -43,7 +43,39 @@ class Application(_apps.Application):
              0x00003480,
             ]
 
-    midi = midi1
+    midi2 = [0x00513090,
+             0x00513490,
+             0x00513790,
+             0x00003080,
+             0x00003480,
+             0x00003780,
+             0x00513290,
+             0x00513590,
+             0x00513990,
+             0x00003280,
+             0x00003580,
+             0x00003980,
+             0x00513590,
+             0x00513990,
+             0x00513c90,
+             0x00003580,
+             0x00003980,
+             0x00003c80,
+             0x00513790,
+             0x00513b90,
+             0x00513e90,
+             0x00003780,
+             0x00003b80,
+             0x00003e80,
+             0x00513c90,
+             0x00514090,
+             0x00514390,
+             0x00003c80,
+             0x00004080,
+             0x00004380,
+            ]
+
+    midi = midi0
 
     default_colors = {'screen_bg': (0, 0, 0),
                       'screen_fg': (255, 255, 255),
@@ -60,7 +92,7 @@ class Application(_apps.Application):
 
     rows = 7
     max_fps = 60
-    once = False
+    once = True
 
     def _parse_mode(self, mode):
         if isinstance(mode, basestring):

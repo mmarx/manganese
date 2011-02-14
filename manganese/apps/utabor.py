@@ -184,14 +184,14 @@ class Application(_apps.Application):
         return 'inactive'
 
     def draw_node(self, row, column):
-        size = width, height = self._coord(1 / 14, 1 / self.rows)
-        node = pygame.surface.Surface(size, flags=pygame.SRCALPHA).convert()
+        width, height = self.node_size
+        x, y = self.node_center
+        node = pygame.surface.Surface(self.node_size,
+                                      flags=pygame.SRCALPHA).convert()
 
-        radius = 3 * min(width, height) // 8
         color = self._color('key', 'bg', self._node_type(row, column))
-        center = x, y = self._coord(0.5, 0.5, size)
 
-        pygame.draw.circle(node, color, center, radius)
+        pygame.draw.circle(node, color, self.node_center, self.node_radius)
         pygame.draw.line(node, color, (0, y), ((width - x), y))
         pygame.draw.line(node, color, ((width - x), y), (width, y))
         pygame.draw.line(node, color, (x, 0), (x, (height - y)))
@@ -203,7 +203,7 @@ class Application(_apps.Application):
         color = self._color('key', 'fg')
 
         label = self._text(self._pitch(row, column), color)
-        node.blit(label, label.get_rect(center=center))
+        node.blit(label, label.get_rect(center=self.node_center))
 
         self.screen.blit(node, self._coord(x, y))
 
@@ -225,10 +225,86 @@ class Application(_apps.Application):
 
             rows -= 1
 
+        width, height = self.node_size
+        anchor_row, anchor_column = self._coord_from_midi(self.ut.anchor)
+        x, y = anchor_column * width, (2 - anchor_row) * height
+        
+        if len(self.ut.keys) == 3:
+            # FIXME this should work for > 3 keys
+
+            nodes = []
+
+            for key in self.ut.keys:
+                nodes.append(self.tn.coordinates((key - (self.ut.anchor %
+                                                         12)) % 12))
+                
+            i = 0
+            j = -1
+            k = -1
+            
+            for index in [1, 2]:
+                if nodes[i][1] == nodes[index][1]:
+                    j = index
+                else:
+                    k = index
+
+            if j == -1:
+                i = 1
+                j = 2
+                k = 0
+
+            # k      k
+            # ij or ij
+
+            if nodes[j][0] == nodes[k][0]:
+                i, j = j, i
+
+            # k
+            # ij
+
+            above = True
+            if nodes[k][1] < nodes[i][1]:
+                above = False
+
+            abs_x = x + width // 2 + 2
+            abs_y = y + 3 * height // 2
+
+            points = [nodes[i] for i in [k, i, j]]
+            points = [(abs_x + rel_x * width * 0.75,
+                       abs_y - rel_y * height * 0.75) for (rel_x, rel_y) in points]
+
+            chord_type = 'major' if above else 'minor'
+
+            pygame.draw.polygon(self.screen, self._color('chord', 'bg', chord_type), points, 0)
+            pygame.draw.polygon(self.screen, self._color('screen', 'fg'), points, 1)
+            
+            
+        offset = min(width, height) - 2.5 * self.node_radius
+
+        points = [(x - width + offset, y - 0 * height + offset),
+                  (x - width + offset, y + height),
+                  (x - 2 * width + offset, y + height),
+                  (x - 2 * width + offset, y + 2 * height - offset),
+                  (x - width + offset, y + 2 * height - offset),
+                  (x - width + offset, y + 3 * height - offset),
+                  (x + 2 * width + offset, y + 3 * height - offset),
+                  (x + 2 * width + offset, y + 2 * height - offset),
+                  (x + 3 * width + offset, y + 2 * height - offset),
+                  (x + 3 * width + offset, y - 0 * height + offset),
+                  ]
+
+        pygame.draw.polygon(self.screen, self._color('screen', 'fg'), points, 1)
+
+    def resize(self, mode):
+        self.mode = mode
+        self.node_size = width, height = self._coord(1 / 14, 1 / self.rows)
+        self.node_radius = 3 * min(width, height) // 8
+        self.node_center = x, y = self._coord(0.5, 0.5, self.node_size)
+
     def run(self):
         pygame.init()
 
-        self.mode = self._parse_mode(self.cfg('mode', '640x480'))
+        self.resize(self._parse_mode(self.cfg('mode', '640x480')))
         self.screen = pygame.display.set_mode(self.mode)
 
         self.colors = self.cfg('colors', self.default_colors)
@@ -265,9 +341,9 @@ class Application(_apps.Application):
                     if event.key == pygame.K_ESCAPE:
                         running = False
                 elif event.type == pygame.VIDEORESIZE:
-                    self.mode = (event.w, event.h)
+                    self.resize((event.w, event.h))
 
-            if midi_frames > self.max_fps:
+            if midi_frames > self.max_fps // 4:
                 midi_frames = 0
                 midi_current = (midi_current + 1)
 

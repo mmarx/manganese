@@ -9,7 +9,7 @@ class Naming(object):
                 index = self.base_pitches.index((pitch - 1) % 12)
                 return self.augment(self.base_names[index])
             else:
-                index = self.base_pitches.index((pitch + 1) % 13)
+                index = self.base_pitches.index((pitch + 1) % 12)
                 return self.diminish(self.base_names[index])
 
 

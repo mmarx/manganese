@@ -276,14 +276,18 @@ class Application(_apps.Application):
 
             points = [nodes[i] for i in [k, i, j]]
             points = [(abs_x + rel_x * width * 0.75,
-                       abs_y - rel_y * height * 0.75) for (rel_x, rel_y) in points]
+                       abs_y - rel_y * height * 0.75)
+                      for (rel_x, rel_y) in points]
 
             chord_type = 'major' if above else 'minor'
 
-            pygame.draw.polygon(self.screen, self._color('chord', 'bg', chord_type), points, 0)
-            pygame.draw.polygon(self.screen, self._color('screen', 'fg'), points, 1)
-            
-            
+            pygame.draw.polygon(self.screen,
+                                self._color('chord', 'bg', chord_type),
+                                points, 0)
+            pygame.draw.polygon(self.screen,
+                                self._color('screen', 'fg'),
+                                points, 1)
+
         offset = min(width, height) - 2.5 * self.node_radius
 
         points = [(x - width + offset, y - 0 * height + offset),
@@ -298,7 +302,9 @@ class Application(_apps.Application):
                   (x + 3 * width + offset, y - 0 * height + offset),
                   ]
 
-        pygame.draw.polygon(self.screen, self._color('screen', 'fg'), points, 1)
+        pygame.draw.polygon(self.screen,
+                            self._color('screen', 'fg'),
+                            points, 1)
 
     def resize(self, mode):
         self.mode = mode

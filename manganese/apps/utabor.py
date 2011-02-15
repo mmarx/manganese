@@ -153,6 +153,58 @@ class Application(_apps.Application):
         for column in range(14):
             self.draw_node(row, column)
 
+    def draw_chord(self, nodes):
+        if len(nodes) > 3:
+            return
+        
+        width, height = self.node_size
+        x, y = self.anchor_column * width, (2 - self.anchor_row) * height
+        
+        i = 0
+        j = -1
+        k = -1
+
+        for index in [1, 2]:
+            if nodes[i][1] == nodes[index][1]:
+                j = index
+            else:
+                k = index
+
+        if j == -1:
+            i = 1
+            j = 2
+            k = 0
+
+        # k      k
+        # ij or ij
+
+        if nodes[j][0] == nodes[k][0]:
+            i, j = j, i
+
+        # k
+        # ij
+
+        above = True
+        if nodes[k][1] < nodes[i][1]:
+            above = False
+
+        abs_x = x + width // 2 + 2
+        abs_y = y + 3 * height // 2
+
+        points = [nodes[i] for i in [k, i, j]]
+        points = [(abs_x + rel_x * width * 0.75,
+                   abs_y - rel_y * height * 0.75)
+                  for (rel_x, rel_y) in points]
+
+        chord_type = 'major' if above else 'minor'
+
+        pygame.draw.polygon(self.screen,
+                            self._color('chord', 'bg', chord_type),
+                            points, 0)
+        pygame.draw.polygon(self.screen,
+                            self._color('screen', 'fg'),
+                            points, 1)
+
     def draw_net(self):
         rows = self.rows
         next_row = 0
@@ -167,63 +219,17 @@ class Application(_apps.Application):
 
             rows -= 1
 
-        width, height = self.node_size
-        x, y = self.anchor_column * width, (2 - self.anchor_row) * height
-
-        if len(self.ut.keys) == 3:
-            # FIXME this should work for > 3 keys
-
+        if len(self.ut.keys) >= 3:
             nodes = []
 
             for key in self.ut.keys:
                 nodes.append(self.tn.coordinates((key -
                                                   (self.anchor % 12)) % 12))
 
-            i = 0
-            j = -1
-            k = -1
+            self.draw_chord(nodes)
 
-            for index in [1, 2]:
-                if nodes[i][1] == nodes[index][1]:
-                    j = index
-                else:
-                    k = index
-
-            if j == -1:
-                i = 1
-                j = 2
-                k = 0
-
-            # k      k
-            # ij or ij
-
-            if nodes[j][0] == nodes[k][0]:
-                i, j = j, i
-
-            # k
-            # ij
-
-            above = True
-            if nodes[k][1] < nodes[i][1]:
-                above = False
-
-            abs_x = x + width // 2 + 2
-            abs_y = y + 3 * height // 2
-
-            points = [nodes[i] for i in [k, i, j]]
-            points = [(abs_x + rel_x * width * 0.75,
-                       abs_y - rel_y * height * 0.75)
-                      for (rel_x, rel_y) in points]
-
-            chord_type = 'major' if above else 'minor'
-
-            pygame.draw.polygon(self.screen,
-                                self._color('chord', 'bg', chord_type),
-                                points, 0)
-            pygame.draw.polygon(self.screen,
-                                self._color('screen', 'fg'),
-                                points, 1)
-
+        width, height = self.node_size
+        x, y = self.anchor_column * width, (2 - self.anchor_row) * height
         offset = min(width, height) - 2.5 * self.node_radius
 
         points = [(x - width + offset, y - 0 * height + offset),

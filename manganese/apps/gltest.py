@@ -1,6 +1,9 @@
 
 import pygame
 
+from OpenGL import GL
+from OpenGL.arrays import vbo
+
 import _apps
 
 
@@ -10,7 +13,9 @@ class Application(_apps.Application):
     def run(self):
         pygame.init()
 
-        self.screen = pygame.display.set_mode((640, 480))
+        flags = pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF
+
+        self.screen = pygame.display.set_mode((640, 480), flags)
         self.clock = pygame.time.Clock()
 
         running = True
@@ -25,5 +30,4 @@ class Application(_apps.Application):
                     if event.key == pygame.K_ESCAPE:
                         running = False
 
-            self.screen.fill((0, 0, 255))
             pygame.display.flip()

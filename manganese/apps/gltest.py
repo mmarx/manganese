@@ -20,6 +20,7 @@ import _apps
 
 from manganese.vismut import gl
 
+import manganese.vismut.gl.util
 import manganese.vismut.gl.context
 import manganese.vismut.gl.shaders
 
@@ -54,27 +55,20 @@ class Application(_apps.Application):
             ], 'f'))
 
         self.matrix = numpy.matrix([
-            [.125, 0, 0, 0],
-            [0, .125, 0, 0],
-            [0, 0, .125, 0],
-            [0, 0, 0, 1],
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 8],
             ], 'f')
 
     def render(self):
-        GL.glUseProgram(self.program)
-        loc = GL.glGetUniformLocation(self.program, "transformation")
-        GL.glUniformMatrix4fv(loc, 1, True, self.matrix)
-        try:
-            self.vbo.bind()
-            try:
-                GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
-                GL.glVertexPointerf(self.vbo)
-                GL.glDrawArrays(GL.GL_TRIANGLES, 0, 9)
-            finally:
-                self.vbo.unbind()
-                GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
-        finally:
-            GL.glUseProgram(0)
+        with gl.util.use_program(self.program) as program:
+            gl.util.transformation_matrix(program, self.matrix)
+
+            with gl.util.bind(self.vbo):
+                with gl.util.enable_client_state(GL.GL_VERTEX_ARRAY):
+                    GL.glVertexPointerf(self.vbo)
+                    GL.glDrawArrays(GL.GL_TRIANGLES, 0, 9)
 
     def run(self):
         self.context = gl.context.OpenGLContext(renderer=self.render,

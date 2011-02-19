@@ -35,3 +35,6 @@ python_extension(video "vismut/video/" "manganese/")
 
 target_link_libraries(video ${SDL_LIBRARY})
 #target_link_libraries(vismut ${OpenGL_gl_LIBRARIES})
+
+file(GLOB VISMUT_DATA data/*.vert data/*.frag)
+install(FILES ${VISMUT_DATA} DESTINATION data/vismut/)

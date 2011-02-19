@@ -18,51 +18,27 @@ import numpy
 
 import _apps
 
+from manganese.vismut import gl
 
-class Shaders(object):
-    VERTEX, FRAGMENT = range(2)
-
-    exts = {VERTEX: 'vert',
-            FRAGMENT: 'frag',
-            }
-
-    types = {VERTEX: GL.GL_VERTEX_SHADER,
-             FRAGMENT: GL.GL_FRAGMENT_SHADER,
-             }
-
-    @classmethod
-    def filename(cls, basename, type):
-        return '%s.%s' % (basename, cls.exts[type])
-
-    @classmethod
-    def compile(cls, shader, type):
-        return GL.shaders.compileShader(shader, cls.types[type])
+import manganese.vismut.gl.context
+import manganese.vismut.gl.shaders
 
 
 class Application(_apps.Application):
     max_fps = 60
 
     def compile_shader(self, name, type):
-        with open(self.data(Shaders.filename(name, type),
+        with open(self.data(gl.shaders.filename(name, type),
                             app='vismut')) as shader:
-            return Shaders.compile(shader.read(), type)
+            return gl.shaders.compile_shader(shader.read(), type)
 
     def compile_program(self, name):
-        vertex = self.compile_shader(name, Shaders.VERTEX)
-        fragment = self.compile_shader(name, Shaders.FRAGMENT)
+        vertex = self.compile_shader(name, gl.shaders.VERTEX)
+        fragment = self.compile_shader(name, gl.shaders.FRAGMENT)
 
         return GL.shaders.compileProgram(vertex, fragment)
 
     def setup(self):
-        pygame.init()
-
-        flags = pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF
-
-        self.screen = pygame.display.set_mode((640, 480), flags)
-        self.clock = pygame.time.Clock()
-
-        self.running = True
-
         self.program = self.compile_program('simple')
 
         self.vbo = vbo.VBO(numpy.array([
@@ -101,18 +77,9 @@ class Application(_apps.Application):
             GL.glUseProgram(0)
 
     def run(self):
+        self.context = gl.context.OpenGLContext(renderer=self.render,
+                                                max_fps=self.max_fps)
+        self.context.setup(self.cfg('mode', '640x480'))
         self.setup()
 
-        while self.running:
-            self.clock.tick(self.max_fps)
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.running = False
-
-            self.render()
-
-            pygame.display.flip()
+        self.context.run()

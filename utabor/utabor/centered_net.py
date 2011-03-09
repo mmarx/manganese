@@ -42,7 +42,7 @@ class ToneNet(object):
                                   else 'h' + default_policy(c))),
                     }
 
-        if(base in policies):
+        if base in policies:
             return policies[base](adjust)
         else:
             return basenames[base] + default_policy(adjust)
@@ -81,12 +81,12 @@ class ToneNet(object):
                 -1: (-1, 1),
                 }
 
-        (ax, ay) = self.anchor
+        ax, ay = self.anchor
 
         if abs(y - ay) > 1:
             return False
 
-        (l, r) = clip[y - ay]
+        l, r = clip[y - ay]
 
         if l <= (x - ax) <= r:
             return True
@@ -96,10 +96,10 @@ class ToneNet(object):
         return (x, y) == self.anchor
 
     def pitch_coordinates(self, pitch):
-        (ax, ay) = self.anchor
+        ax, ay = self.anchor
         anchor_pitch = ax * 7 + ay * 4
         pitch_class = (pitch - anchor_pitch) % 12
-        (rx, ry) = self.coords[pitch_class]
+        rx, ry = self.coords[pitch_class]
 
         return (ax + rx, ay + ry)
 
@@ -110,7 +110,7 @@ class ToneNet(object):
         return (x, y) in self.active
 
     def should_grow(self, min_dist=0):
-        (ax, ay) = self.anchor
+        ax, ay = self.anchor
 
         if min(ax - 2 - self.left,
                self.right - ax - 2,
@@ -120,7 +120,7 @@ class ToneNet(object):
         return False
 
     def grow(self, min_dist=0, by=2):
-        (ax, ay) = self.anchor
+        ax, ay = self.anchor
 
         if (ax - 2 - self.left) < min_dist:
             self.left -= by

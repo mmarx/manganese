@@ -63,11 +63,11 @@ class ToneNet(object):
 
     @property
     def columns(self):
-        return self.right - self.left
+        return self.right - self.left + 1
 
     @property
     def rows(self):
-        return self.top - self.bottom
+        return self.top - self.bottom + 1
 
     def rebase(self, anchor):
         self.anchor = anchor

@@ -27,6 +27,7 @@
 
 #include <jack/jack.h>
 
+#include "port.hxx"
 #include "midi_event.hxx"
 #include "bounded_buffer.hxx"
 

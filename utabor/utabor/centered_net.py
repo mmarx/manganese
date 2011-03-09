@@ -61,9 +61,11 @@ class ToneNet(object):
 
         return self._name(base, adjust)
 
+    @property
     def columns(self):
         return self.right - self.left
 
+    @property
     def rows(self):
         return self.top - self.bottom
 

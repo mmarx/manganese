@@ -15,7 +15,7 @@ class ToneNet(object):
               11: (1, 1),
               }
 
-    def __init__(self, left=-3, right=7, bottom=-2, top=2, anchor=(0, 0)):
+    def __init__(self, left=-3, right=3, bottom=-2, top=2, anchor=(0, 0)):
         self.left = left
         self.right = right
         self.bottom = bottom

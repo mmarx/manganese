@@ -114,54 +114,60 @@ class Application(_apps.Application):
 
         self.screen.blit(node, self._coord(x, y))
 
-    def draw_chord(self, nodes):
-        if len(nodes) != 3:
-            return
-
-        i = 0
-        j = -1
-        k = -1
-
-        for index in [1, 2]:
-            if nodes[i][1] == nodes[index][1]:
-                j = index
-            else:
-                k = index
-
-        if j == -1:
-            i = 1
-            j = 2
-            k = 0
-
-        # k      k
-        # ij or ij
-
-        if nodes[j][0] == nodes[k][0]:
-            i, j = j, i
-
-        # k
-        # ij
-
-        above = True
-        if nodes[k][1] < nodes[i][1]:
-            above = False
-
-        points = [self._coord(*self._node_at(*nodes[i]), center=True)
-                  for i in [k, i, j]]
-
-        chord_type = 'major' if above else 'minor'
+    def draw_chord(self, nodes, type):
+        ax, ay = self.tn.anchor
+        points = [self._coord(*self._node_at(ax + x, ay + y), center=True)
+                  for x, y in nodes]
 
         pygame.draw.polygon(self.screen,
-                            self._color('chord', 'bg', chord_type),
+                            self._color('chord', 'bg', type),
                             points, 0)
         pygame.draw.polygon(self.screen,
                             self._color('screen', 'fg'),
                             points, 1)
 
+    def draw_chords(self, nodes):
+        if len(nodes) < 3:
+            return
+
+        if (0, 0) in nodes:
+            if (0, 1) in nodes:
+                if (1, 0) in nodes:
+                    self.draw_chord([(0, 0), (0, 1), (1, 0)], 'major')
+                if (-1, 1) in nodes:
+                    self.draw_chord([(0, 0), (0, 1), (-1, 1)], 'minor')
+
+            if (0, -1) in nodes:
+                if (1, -1) in nodes:
+                    self.draw_chord([(0, 0), (0, -1), (1, -1)], 'major')
+                if (-1, 0) in nodes:
+                    self.draw_chord([(0, 0), (0, -1), (-1, 0)], 'minor')
+
+            if (-1, 0) in nodes and (-1, 1) in nodes:
+                self.draw_chord([(0, 0), (-1, 0), (-1, 1)], 'major')
+
+            if (1, 0) in nodes and (1, -1) in nodes:
+                self.draw_chord([(0, 0), (1, 0), (1, -1)], 'minor')
+
+        if (-1, 0) in nodes and (-1, -1) in nodes:
+            if (-2, 0) in nodes:
+                self.draw_chord([(-1, 0), (-1, -1), (-2, 0)], 'minor')
+            if (0, -1) in nodes:
+                self.draw_chord([(-1, 0), (-1, -1), (0, -1)], 'major')
+
+        if (1, 1) in nodes:
+            if (2, 0) in nodes and (2, 1) in nodes:
+                self.draw_chord([(1, 1), (2, 0), (2, 1)], 'minor')
+            if (1, 0) in nodes:
+                if (2, 0) in nodes:
+                    self.draw_chord([(1, 1), (1, 0), (2, 0)], 'major')
+                if (0, 1) in nodes:
+                    self.draw_chord([(1, 1), (1, 0), (0, 1)], 'minor')
+
     def draw_net(self):
         self.tn.set_active(self.ut.keys)
-        self.draw_chord([self.tn.pitch_coordinates(key)
-                         for key in self.ut.keys])
+        self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
+                          for key in self.ut.keys])
 
         for column in range(self.tn.left, self.tn.right + 1):
             for row in range(self.tn.bottom, self.tn.top + 1):

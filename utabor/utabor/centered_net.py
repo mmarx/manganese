@@ -95,11 +95,14 @@ class ToneNet(object):
     def is_anchor(self, x, y):
         return (x, y) == self.anchor
 
-    def pitch_coordinates(self, pitch):
+    def pitch_coordinates(self, pitch, relative=False):
         ax, ay = self.anchor
         anchor_pitch = ax * 7 + ay * 4
         pitch_class = (pitch - anchor_pitch) % 12
         rx, ry = self.coords[pitch_class]
+
+        if relative:
+            ax = ay = 0
 
         return (ax + rx, ay + ry)
 

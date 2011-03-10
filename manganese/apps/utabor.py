@@ -11,7 +11,7 @@ import _apps
 import manganese.utabor._utabor as utabor
 import manganese.midi.pitch as pitch
 import manganese.midi.jack as jack
-import manganese.utabor.net as net
+import manganese.utabor.centered_net as net
 
 
 class Application(_apps.Application):
@@ -29,12 +29,8 @@ class Application(_apps.Application):
                                    },
                       }
 
-    rows = 7
     max_fps = 60
-
     anchor = 60
-    anchor_row = -1
-    anchor_column = 8
 
     def _parse_mode(self, mode):
         if isinstance(mode, basestring):
@@ -59,61 +55,31 @@ class Application(_apps.Application):
 
         return self.font.render(the_text, True, color)
 
-    def _coord(self, x, y, rect=None):
+    def _coord(self, x, y, rect=None, center=False):
         if rect is not None:
             abs_x, abs_y = rect
         else:
             abs_x, abs_y = self.mode
 
-        return (int(x * abs_x), int(y * abs_y))
-
-    def _pitch_index(self, row, column):
-        return column * 7 + 4 * (row - 1)
-
-    def _pitch(self, row, column):
-        pitches = [
-            ['his', 'fisis', 'cisis', 'gisis', 'disis', 'aisis', 'eisis', 'hisis', 'fisisis', 'cisisis', 'gisisis', 'disisis', 'aisisis', 'eisisis'],
-            ['gis', 'dis', 'ais', 'eis', 'his', 'fisis', 'cisis', 'gisis', 'disis', 'aisis', 'eisis', 'hisis', 'fisisis', 'cisisis'],
-            ['e', 'h', 'fis', 'cis', 'gis', 'dis', 'ais', 'eis', 'his', 'fisis', 'cisis', 'gisis', 'disis', 'aisis'],
-            ['c', 'g', 'd', 'a', 'e', 'h', 'fis', 'cis', 'gis', 'dis', 'ais', 'eis', 'his', 'fisis'],
-            ['as', 'es', 'b', 'f', 'c', 'g', 'd', 'a', 'e', 'h', 'fis', 'cis', 'gis', 'dis'],
-            ['fes', 'ces', 'ges', 'des', 'as', 'es', 'b', 'f', 'c', 'g', 'd', 'a', 'e', 'h'],
-            ['deses', 'asas', 'eses', 'heses', 'fes', 'ces', 'ges', 'des', 'as', 'es', 'b', 'f', 'c', 'g'],
-            ['heses', 'feses', 'ceses', 'geses', 'deses', 'asas', 'eses', 'heses', 'fes', 'ces', 'ges', 'des', 'as', 'es'],
-            ['geseses', 'deseses', 'asasas', 'eseses', 'heseses', 'feses', 'ceses', 'geses', 'deses', 'asas', 'eses', 'heses', 'fes', 'ces'],
-            ]
-
-        return pitches[(4 - row)][column]
-
-        classifier = self.tn.pitchClassifier
-
-        if row > 0 or (row == 0 and column >= 3):
-            augment = True
+        if center:
+            off_x, off_y = self.node_size            
+            off_x *= 0.5
+            off_y *= 0.5
         else:
-            augment = False
+            off_x = off_y = 0
 
-        return classifier.name(classifier.classify(
-            self._pitch_index(row, column)), augment=augment)
+        return (int(x * abs_x + off_x), int(y * abs_y + off_y))
 
-    def _coord_from_midi(self, midi):
-        row = ((midi - 60) // 12) - 1
-        pitch = midi % 12
-        column = (7 * pitch - 4 * (row - 1)) % 12
+    def _node_at(self, x, y):
+        nx = x - self.tn.left
+        ny = self.tn.top - y
 
-        return (row, column)
+        return ((nx / self.tn.columns), (ny / self.tn.rows))
 
-    def _node_type(self, row, column):
-        anchor = y, x = (self.anchor_row, self.anchor_column)
+    def _node_type(self, x, y):
+        is_anchor = self.tn.is_anchor(x, y)
 
-        is_anchor = False
-
-        if anchor == (row, column):
-            is_anchor = True
-
-        for key in self.ut.keys:
-            rel_x, rel_y = self.tn.coordinates((key - (self.anchor % 12)) % 12)
-
-            if ((x + rel_x) % 13, y + rel_y) == (column, row):
+        if self.tn.is_active(x, y):
                 if is_anchor:
                     return 'anchor_active'
                 else:
@@ -124,14 +90,14 @@ class Application(_apps.Application):
 
         return 'inactive'
 
-    def draw_node(self, row, column):
+    def draw_node(self, column, row):
         width, height = self.node_size
         x, y = self.node_center
         node = pygame.surface.Surface(self.node_size,
                                       flags=pygame.SRCALPHA).convert_alpha()
         node.fill((0, 0, 0, 0))
 
-        color = self._color('key', 'bg', self._node_type(row, column))
+        color = self._color('key', 'bg', self._node_type(column, row))
 
         pygame.draw.circle(node, color, self.node_center, self.node_radius)
         pygame.draw.line(node, color, (0, y), ((width - x), y))
@@ -139,27 +105,19 @@ class Application(_apps.Application):
         pygame.draw.line(node, color, (x, 0), (x, (height - y)))
         pygame.draw.line(node, color, (x, (height - y)), (x, height))
 
-        x = column / 14
-        y = 0.5 - ((row + (self.rows % 2) * 0.5) / self.rows)
+        x, y = self._node_at(column, row)
 
         color = self._color('key', 'fg')
 
-        label = self._text(self._pitch(row, column), color)
+        label = self._text(self.tn.name(column, row), color)
         node.blit(label, label.get_rect(center=self.node_center))
 
         self.screen.blit(node, self._coord(x, y))
 
-    def draw_row(self, row):
-        for column in range(14):
-            self.draw_node(row, column)
-
     def draw_chord(self, nodes):
-        if len(nodes) > 3:
+        if len(nodes) != 3:
             return
-        
-        width, height = self.node_size
-        x, y = self.anchor_column * width, (2 - self.anchor_row) * height
-        
+
         i = 0
         j = -1
         k = -1
@@ -188,13 +146,8 @@ class Application(_apps.Application):
         if nodes[k][1] < nodes[i][1]:
             above = False
 
-        abs_x = x + width // 2 + 2
-        abs_y = y + 3 * height // 2
-
-        points = [nodes[i] for i in [k, i, j]]
-        points = [(abs_x + rel_x * width * 0.75,
-                   abs_y - rel_y * height * 0.75)
-                  for (rel_x, rel_y) in points]
+        points = [self._coord(*self._node_at(*nodes[i]), center=True)
+                  for i in [k, i, j]]
 
         chord_type = 'major' if above else 'minor'
 
@@ -206,42 +159,28 @@ class Application(_apps.Application):
                             points, 1)
 
     def draw_net(self):
-        rows = self.rows
-        next_row = 0
+        self.tn.set_active(self.ut.keys)
+        self.draw_chord([self.tn.pitch_coordinates(key)
+                         for key in self.ut.keys])
 
-        while rows > 0:
-            self.draw_row(next_row)
-
-            if(next_row >= 0):
-                next_row = -abs(next_row) - 1
-            else:
-                next_row *= -1
-
-            rows -= 1
-
-        if len(self.ut.keys) >= 3:
-            nodes = []
-
-            for key in self.ut.keys:
-                nodes.append(self.tn.coordinates((key -
-                                                  (self.anchor % 12)) % 12))
-
-            self.draw_chord(nodes)
+        for column in range(self.tn.left, self.tn.right + 1):
+            for row in range(self.tn.bottom, self.tn.top + 1):
+                self.draw_node(column, row)
 
         width, height = self.node_size
-        x, y = self.anchor_column * width, (2 - self.anchor_row) * height
+        x, y = self._coord(*self._node_at(*self.tn.anchor))
         offset = min(width, height) - 2.5 * self.node_radius
 
-        points = [(x - width + offset, y - 0 * height + offset),
-                  (x - width + offset, y + height),
-                  (x - 2 * width + offset, y + height),
-                  (x - 2 * width + offset, y + 2 * height - offset),
+        points = [(x - width + offset, y - 1 * height + offset),
+                  (x - width + offset, y + 0 * height),
+                  (x - 2 * width + offset, y + 0 * height),
+                  (x - 2 * width + offset, y + 1 * height - offset),
+                  (x - width + offset, y + 1 * height - offset),
                   (x - width + offset, y + 2 * height - offset),
-                  (x - width + offset, y + 3 * height - offset),
-                  (x + 2 * width + offset, y + 3 * height - offset),
                   (x + 2 * width + offset, y + 2 * height - offset),
-                  (x + 3 * width + offset, y + 2 * height - offset),
-                  (x + 3 * width + offset, y - 0 * height + offset),
+                  (x + 2 * width + offset, y + 1 * height - offset),
+                  (x + 3 * width + offset, y + 1 * height - offset),
+                  (x + 3 * width + offset, y - 1 * height + offset),
                   ]
 
         pygame.draw.polygon(self.screen,
@@ -250,11 +189,14 @@ class Application(_apps.Application):
 
     def resize(self, mode):
         self.mode = mode
-        self.node_size = width, height = self._coord(1 / 14, 1 / self.rows)
+        self.node_size = width, height = self._coord(1 / self.tn.columns,
+                                                     1 / self.tn.rows)
         self.node_radius = 3 * min(width, height) // 8
         self.node_center = x, y = self._coord(0.5, 0.5, self.node_size)
 
     def run(self):
+        self.tn = net.ToneNet()
+
         pygame.init()
 
         self.resize(self._parse_mode(self.cfg('mode', '640x480')))
@@ -272,9 +214,6 @@ class Application(_apps.Application):
         logic = os.path.join(self.prefix(), 'data', 'utabor', 'demo.mut')
         self.ut.load_logic(logic)
         self.ut.select_action('N', True)
-        print '-!- initial tone net:'
-        self.tn = net.ToneNet(pitch.PitchClassifier(naming=pitch.NamingDE))
-        self.tn.print_net()
         print
         self.ut.keys
 
@@ -304,17 +243,11 @@ class Application(_apps.Application):
                         if self.ut.anchor_changed:
                             anchor = self.ut.anchor
                             if anchor != self.anchor:
-                                distance = anchor - self.anchor
                                 self.tn.move(anchor)
-                                x, y = self.tn.coordinates(distance % 12)
-
                                 self.anchor = anchor
-                                self.anchor_column += x
-                                self.anchor_row += y
-
-                    if eventful and self.ut.need_update:
-                        self.tn.print_net(mark=self.ut.keys)
-                        print
+                            if self.tn.should_grow(min_dist=1):
+                                self.tn.grow(min_dist=1, by=1)
+                                self.resize(self.mode)
 
                 self.screen.fill(self._color('screen', 'bg'))
                 self.draw_net()

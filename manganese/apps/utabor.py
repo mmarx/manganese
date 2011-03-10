@@ -245,6 +245,7 @@ class Application(_apps.Application):
                             if anchor != self.anchor:
                                 self.tn.move(anchor)
                                 self.anchor = anchor
+
                             if self.tn.should_grow(min_dist=1):
                                 self.tn.grow(min_dist=1, by=1)
                                 self.resize(self.mode)

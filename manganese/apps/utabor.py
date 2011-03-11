@@ -260,10 +260,15 @@ class Application(_apps.Application):
                             if anchor != self.anchor:
                                 self.tn.move(anchor)
                                 self.anchor = anchor
+                                self.trace.append(self.tn.anchor)
 
-                            if self.tn.should_grow(min_dist=1):
-                                self.tn.grow(min_dist=1, by=1)
-                                self.resize(self.mode)
+                if self.tn.should_grow(min_dist=1):
+                    self.grow_count += 1
+
+                    if self.grow_count >= self.max_fps // 10:
+                        self.tn.grow(min_dist=1, by=1)
+                        self.resize(self.mode)
+                        self.grow_count = 0
 
                 self.screen.fill(self._color('screen', 'bg'))
                 self.draw_net()

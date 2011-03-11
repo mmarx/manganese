@@ -170,14 +170,6 @@ class Application(_apps.Application):
                     self.draw_chord([(1, 1), (1, 0), (0, 1)], 'minor')
 
     def draw_net(self):
-        self.tn.set_active(self.ut.keys)
-        self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
-                          for key in self.ut.keys])
-
-        for column in range(self.tn.left, self.tn.right + 1):
-            for row in range(self.tn.bottom, self.tn.top + 1):
-                self.draw_node(column, row)
-
         width, height = self.node_size
         x, y = self._coord(*self._node_at(*self.tn.anchor))
         offset = min(width, height) - 2.5 * self.node_radius
@@ -193,6 +185,18 @@ class Application(_apps.Application):
                   (x + 3 * width + offset, y + 1 * height - offset),
                   (x + 3 * width + offset, y - 1 * height + offset),
                   ]
+
+        pygame.draw.polygon(self.screen,
+                            self._color('screen', 'hl'),
+                            points, 0)
+
+        self.tn.set_active(self.ut.keys)
+        self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
+                          for key in self.ut.keys])
+
+        for column in range(self.tn.left, self.tn.right + 1):
+            for row in range(self.tn.bottom, self.tn.top + 1):
+                self.draw_node(column, row)
 
         pygame.draw.polygon(self.screen,
                             self._color('screen', 'fg'),

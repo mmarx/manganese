@@ -23,7 +23,8 @@ class Application(_apps.Application):
                                  'inactive': (160, 160, 220),
                                  'anchor': (250, 200, 250),
                                  'anchor_active': (220, 220, 250),
-                                 'anchor_initial': (255, 0, 0),
+                                 'anchor_initial': (200, 0, 0),
+                                 'anchor_initial_active': (255, 0, 0),
                                  },
                       'key_fg': (80, 80, 80),
                       'chord_bg': {'major': (255, 255, 0),
@@ -33,6 +34,9 @@ class Application(_apps.Application):
 
     max_fps = 60
     anchor = 60
+    grow_count = 0
+    trace = [(0, 0),
+             ]
 
     def _parse_mode(self, mode):
         if isinstance(mode, basestring):
@@ -79,16 +83,18 @@ class Application(_apps.Application):
         return ((nx / self.tn.columns), (ny / self.tn.rows))
 
     def _node_type(self, x, y):
-        if (x, y) == (0, 0):
-            return 'anchor_initial'
-
         is_anchor = self.tn.is_anchor(x, y)
 
         if self.tn.is_active(x, y):
-                if is_anchor:
-                    return 'anchor_active'
-                else:
-                    return 'active'
+            if (x, y) in self.trace:
+                return 'anchor_initial_active'
+
+            if is_anchor:
+                return 'anchor_active'
+            else:
+                return 'active'
+        elif (x, y) in self.trace:
+            return 'anchor_initial'
 
         if is_anchor:
             return 'anchor'

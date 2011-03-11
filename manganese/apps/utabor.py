@@ -18,10 +18,12 @@ class Application(_apps.Application):
 
     default_colors = {'screen_bg': (255, 255, 255),
                       'screen_fg': (0, 0, 0),
-                      'key_bg': {'active': (180, 220, 250),
-                                 'inactive': (180, 180, 250),
-                                 'anchor': (220, 180, 250),
+                      'screen_hl': (50, 230, 230),
+                      'key_bg': {'active': (200, 230, 250),
+                                 'inactive': (160, 160, 220),
+                                 'anchor': (250, 200, 250),
                                  'anchor_active': (220, 220, 250),
+                                 'anchor_initial': (255, 0, 0),
                                  },
                       'key_fg': (80, 80, 80),
                       'chord_bg': {'major': (255, 255, 0),
@@ -77,6 +79,9 @@ class Application(_apps.Application):
         return ((nx / self.tn.columns), (ny / self.tn.rows))
 
     def _node_type(self, x, y):
+        if (x, y) == (0, 0):
+            return 'anchor_initial'
+
         is_anchor = self.tn.is_anchor(x, y)
 
         if self.tn.is_active(x, y):

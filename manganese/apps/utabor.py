@@ -12,6 +12,7 @@ import manganese.utabor._utabor as utabor
 import manganese.midi.pitch as pitch
 import manganese.midi.jack as jack
 import manganese.utabor.centered_net as net
+import manganese.math.vector as vector
 
 
 class Application(_apps.Application):
@@ -176,6 +177,31 @@ class Application(_apps.Application):
                 if (0, 1) in nodes:
                     self.draw_chord([(1, 1), (1, 0), (0, 1)], 'minor')
 
+    def draw_arrow(self, src, dst):
+        points = [self._node_coords(*node, center=True)
+                  for node in [src, dst]]
+
+        path = (-vector.Vec2(points[0]) +
+                vector.Vec2(points[1]))
+
+        direction = path.normalized
+
+        mid = vector.Vec2(points[1]) - (path * 0.07$5)
+
+        points.append((mid + path.normal * 0.05).vec)
+        points.append((mid - path.normal * 0.05).vec)
+        points.append(points[1])
+
+        pygame.draw.lines(self.screen,
+                         (255, 0, 0),
+                          False,
+                          points,
+                          5)
+
+    def draw_trace(self):
+        for i in range(len(self.trace) - 1):
+            self.draw_arrow(self.trace[i], self.trace[i + 1])
+
     def draw_net(self):
         width, height = self.node_size
         x, y = self._node_coords(*self.tn.anchor)
@@ -208,6 +234,8 @@ class Application(_apps.Application):
         pygame.draw.polygon(self.screen,
                             self._color('screen', 'fg'),
                             points, 1)
+
+        self.draw_trace()
 
     def resize(self, mode):
         self.mode = mode

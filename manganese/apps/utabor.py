@@ -89,14 +89,14 @@ class Application(_apps.Application):
         is_anchor = self.tn.is_anchor(x, y)
 
         if self.tn.is_active(x, y):
-            if (x, y) in self.trace:
+            if (x, y) == (0, 0):
                 return 'anchor_initial_active'
 
             if is_anchor:
                 return 'anchor_active'
             else:
                 return 'active'
-        elif (x, y) in self.trace:
+        elif (x, y) == (0, 0):
             return 'anchor_initial'
 
         if is_anchor:

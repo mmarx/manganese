@@ -2,6 +2,7 @@
 from __future__ import division
 
 import sys
+import math
 import os.path
 
 import pygame
@@ -177,30 +178,93 @@ class Application(_apps.Application):
                 if (0, 1) in nodes:
                     self.draw_chord([(1, 1), (1, 0), (0, 1)], 'minor')
 
-    def draw_arrow(self, src, dst):
+    def draw_arrow(self, src, dst, surface, color):
+        s = vector.Vec2(src)
+        d = vector.Vec2(dst)
+
+        is_unit = (d - s).norm == 1
+
+        if is_unit:
+            is_arc = False
+        else:
+            is_arc = (s[0] == d[0]) or (s[1] == d[1])
+
         points = [self._node_coords(*node, center=True)
                   for node in [src, dst]]
 
+        offset = vector.Vec2(self.node_size).norm * 0.175
         path = (-vector.Vec2(points[0]) +
                 vector.Vec2(points[1]))
 
         direction = path.normalized
 
-        mid = vector.Vec2(points[1]) - (path * 0.07$5)
+        points[0] = (vector.Vec2(points[0]) +
+                     direction * self.node_radius +
+                     direction.normal * 0.2 * self.node_radius).vec
+        points[1] = (vector.Vec2(points[1]) -
+                     direction * self.node_radius +
+                     direction.normal * 0.2 * self.node_radius).vec
+        mid = vector.Vec2(points[1]) - (direction * 0.2 * self.node_radius)
 
-        points.append((mid + path.normal * 0.05).vec)
-        points.append((mid - path.normal * 0.05).vec)
-        points.append(points[1])
+        if is_arc:
+            points.insert(1, (vector.Vec2(points[1]) -
+                              direction * offset +
+                              direction.normal * offset).vec)
+            points.insert(1, (vector.Vec2(points[0]) +
+                              direction * offset +
+                              direction.normal * offset).vec)
 
-        pygame.draw.lines(self.screen,
-                         (255, 0, 0),
+        points.append((mid + direction.normal * 0.15 * self.node_radius).vec)
+        points.append((mid - direction.normal * 0.15 * self.node_radius).vec)
+        points.append(points[3 if is_arc else 1])
+
+        pygame.draw.lines(surface,
+                          color,
                           False,
                           points,
-                          5)
+                          3)
 
     def draw_trace(self):
-        for i in range(len(self.trace) - 1):
-            self.draw_arrow(self.trace[i], self.trace[i + 1])
+        def rgb_from_hsv(h, s, v):
+            hi = h // 60
+            f = (h / 60) - hi
+            p = v * (1 - s)
+            q = v * (1 - s * f)
+            t = v * (1 - s * (1 - f))
+
+            if hi in [0, 6]:
+                r, g, b = v, t, p
+            elif hi == 1:
+                r, g, b = q, v, p
+            elif hi == 2:
+                r, g, b = p, v, t
+            elif hi == 3:
+                r, g, b = p, q, v
+            elif hi == 4:
+                r, g, b = t, p, v
+            elif hi == 5:
+                r, g, b = v, p, q
+            else:
+                raise ValueError("h_i out of range")
+
+            return (r * 255, g * 255, b * 255)
+
+        def color(index, steps):
+            return rgb_from_hsv((steps - i % 361),
+                                0.75 + index / (4 * steps),
+                                0.75 + index / (4 * steps))
+
+        count = len(self.trace)
+        trace = pygame.surface.Surface(self.mode,
+                                       flags=pygame.SRCALPHA).convert_alpha()
+
+        for i in range(1, count):
+            self.draw_arrow(src=self.trace[i - 1],
+                            dst=self.trace[i],
+                            surface=trace,
+                            color=color(i, count - 1))
+
+        self.screen.blit(trace, (0, 0))
 
     def draw_net(self):
         width, height = self.node_size

@@ -82,6 +82,9 @@ class Application(_apps.Application):
 
         return ((nx / self.tn.columns), (ny / self.tn.rows))
 
+    def _node_coords(self, x, y, **kwargs):
+        return self._coord(*self._node_at(x, y), **kwargs)
+
     def _node_type(self, x, y):
         is_anchor = self.tn.is_anchor(x, y)
 
@@ -116,18 +119,16 @@ class Application(_apps.Application):
         pygame.draw.line(node, color, (x, 0), (x, (height - y)))
         pygame.draw.line(node, color, (x, (height - y)), (x, height))
 
-        x, y = self._node_at(column, row)
-
         color = self._color('key', 'fg')
 
         label = self._text(self.tn.name(column, row), color)
         node.blit(label, label.get_rect(center=self.node_center))
 
-        self.screen.blit(node, self._coord(x, y))
+        self.screen.blit(node, self._node_coords(column, row))
 
     def draw_chord(self, nodes, type):
         ax, ay = self.tn.anchor
-        points = [self._coord(*self._node_at(ax + x, ay + y), center=True)
+        points = [self._node_coords(ax + x, ay + y, center=True)
                   for x, y in nodes]
 
         pygame.draw.polygon(self.screen,
@@ -177,7 +178,7 @@ class Application(_apps.Application):
 
     def draw_net(self):
         width, height = self.node_size
-        x, y = self._coord(*self._node_at(*self.tn.anchor))
+        x, y = self._node_coords(*self.tn.anchor)
         offset = min(width, height) - 2.5 * self.node_radius
 
         points = [(x - width + offset, y - 1 * height + offset),

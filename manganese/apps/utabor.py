@@ -267,7 +267,8 @@ class Application(_apps.Application):
                             if anchor != self.anchor:
                                 self.tn.move(anchor)
                                 self.anchor = anchor
-                                self.trace.append(self.tn.anchor)
+                                if self.trace[-1] != self.tn.anchor:
+                                    self.trace.append(self.tn.anchor)
 
                 if self.tn.should_grow(min_dist=1):
                     self.grow_count += 1

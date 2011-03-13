@@ -62,13 +62,16 @@ class Application(_apps.Application):
             ], 'f')
 
     def render(self):
-        with gl.util.use_program(self.program) as program:
-            gl.util.transformation_matrix(program, self.matrix)
+        print self.context.clock.get_fps()
+        with gl.util.enable(GL.GL_PROGRAM_POINT_SIZE):
+            with gl.util.enable(GL.GL_POINT_SMOOTH):
+                with gl.util.use_program(self.program) as program:
+                    gl.util.transformation_matrix(program, self.matrix)
 
-            with gl.util.bind(self.vbo):
-                with gl.util.enable_client_state(GL.GL_VERTEX_ARRAY):
-                    GL.glVertexPointerf(self.vbo)
-                    GL.glDrawArrays(GL.GL_TRIANGLES, 0, 9)
+                    with gl.util.bind(self.vbo):
+                        with gl.util.enable_client_state(GL.GL_VERTEX_ARRAY):
+                            GL.glVertexPointerf(self.vbo)
+                            GL.glDrawArrays(GL.GL_POINTS, 0, 9)
 
     def run(self):
         self.context = gl.context.OpenGLContext(renderer=self.render,

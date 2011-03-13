@@ -25,6 +25,13 @@ def enable_client_state(state):
     GL.glDisableClientState(state)
 
 
+@contextmanager
+def enable(property):
+    GL.glEnable(property)
+    yield
+    GL.glDisable(property)
+
+
 def transformation_matrix(program, matrix):
     location = GL.glGetUniformLocation(program, "transformation")
     GL.glUniformMatrix4fv(location, 1, True, matrix)

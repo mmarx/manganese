@@ -1,5 +1,10 @@
 
+
+from __future__ import division
+
 from OpenGL import GL
+
+import numpy
 
 from contextlib import contextmanager
 
@@ -35,3 +40,16 @@ def enable(property):
 def transformation_matrix(program, matrix):
     location = GL.glGetUniformLocation(program, "transformation")
     GL.glUniformMatrix4fv(location, 1, True, matrix)
+
+
+def ortho(left, right, bottom, top, near, far):
+    rl = left - right
+    tb = bottom - top
+    fn = far - near
+
+    return numpy.matrix([
+        [-2 / rl, 0, 0, (right + left) / rl],
+        [0, -2 / tb, 0, (top + bottom) / tb],
+        [0, 0, -2 / fn, (far + near) / fn],
+        [0, 0, 0, 1],
+        ], 'f')

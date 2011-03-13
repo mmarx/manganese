@@ -128,11 +128,12 @@ class Application(_apps.Application):
         return 'inactive'
 
     def draw_node(self, column, row):
+        w, h = self.node_size
         v = vbo.VBO(numpy.array([
-            [column - 0.25, row - 0.25, 1.5],
-            [column + 0.25, row - 0.25, 1.5],
-            [column - 0.25, row + 0.25, 1.5],
-            [column + 0.25, row + 0.25, 1.5],
+            [column - 0.5 * w, row - 0.5 * h, 1.5],
+            [column + 0.5 * w, row - 0.5 * h, 1.5],
+            [column - 0.5 * w, row + 0.5 * h, 1.5],
+            [column + 0.5 * w, row + 0.5 * h, 1.5],
             ], 'f'))
 
         with gl.util.bind(v):
@@ -336,6 +337,10 @@ class Application(_apps.Application):
 
         self.draw_trace()
 
+    def resize_event(self, event):
+        self.aspect = event.w / event.h
+        self.resize_net()
+
     def resize_net(self):
         self.matrix = gl.util.ortho(self.tn.left - 0.5,
                                     self.tn.right + 0.5,
@@ -343,6 +348,20 @@ class Application(_apps.Application):
                                     self.tn.top + 0.5,
                                     1,
                                     2)
+
+        scale = self.tn.columns / self.tn.rows
+
+        if self.aspect <= 1:
+            w, h = (0.5 * self.aspect, 0.5)
+        else:
+            w, h = (0.5, 0.5 * self.aspect)
+
+        if scale <= 1:
+            w /= scale
+        else:
+            h /= scale
+
+        self.node_size = (w, h)
 
     def render(self):
         print '-!- fps: ', self.context.clock.get_fps()
@@ -384,13 +403,14 @@ class Application(_apps.Application):
 
     def run(self):
         self.tn = net.ToneNet()
-        self.resize_net()
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
                                                 max_fps=self.max_fps)
 
         mode = self.cfg('mode', '640x480')
         self.context.setup(mode)
+        self.aspect = mode[0] / mode[1]
+        self.resize_net()        
 
         self.colors = self.cfg('colors', self.default_colors)
         self.font = pygame.font.SysFont(name=self.cfg('font',
@@ -405,6 +425,8 @@ class Application(_apps.Application):
         self.ut.select_action('N', True)
 
         self.program = self._compile_program('simple')
+
+        self.context.add_handler(pygame.VIDEORESIZE, self.resize_event)
 
         with jack.create_client() as jack_client:
             self.client = jack_client

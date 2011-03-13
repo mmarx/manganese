@@ -5,12 +5,27 @@ import sys
 import math
 import os.path
 
+import numpy
 import pygame
+
+import OpenGL
+
+OpenGL.FULL_LOGGING = True
+OpenGL.ERROR_ON_COPY = True
+OpenGL.FORWARD_COMPATIBLE_ONLY = True
+
+from OpenGL import GL
+from OpenGL.arrays import vbo
 
 import _apps
 
+from manganese.vismut import gl
+
+import manganese.vismut.gl.util
+import manganese.vismut.gl.context
+import manganese.vismut.gl.shaders
+
 import manganese.utabor._utabor as utabor
-import manganese.midi.pitch as pitch
 import manganese.midi.jack as jack
 import manganese.utabor.centered_net as net
 import manganese.math.vector as vector
@@ -40,10 +55,16 @@ class Application(_apps.Application):
     trace = [(0, 0),
              ]
 
-    def _parse_mode(self, mode):
-        if isinstance(mode, basestring):
-            return [int(x) for x in mode.split('x')]
-        return mode
+    def _compile_shader(self, name, type):
+        with open(self.data(gl.shaders.filename(name, type),
+                            app='vismut')) as shader:
+            return gl.shaders.compile_shader(shader.read(), type)
+
+    def _compile_program(self, name):
+        vertex = self._compile_shader(name, gl.shaders.VERTEX)
+        fragment = self._compile_shader(name, gl.shaders.FRAGMENT)
+
+        return GL.shaders.compileProgram(vertex, fragment)
 
     def _color(self, name, type, subtype=None):
         qualified_name = '%s_%s' % (name, type)
@@ -107,6 +128,19 @@ class Application(_apps.Application):
         return 'inactive'
 
     def draw_node(self, column, row):
+        v = vbo.VBO(numpy.array([
+            [column - 0.25, row - 0.25, 1.5],
+            [column + 0.25, row - 0.25, 1.5],
+            [column - 0.25, row + 0.25, 1.5],
+            [column + 0.25, row + 0.25, 1.5],
+            ], 'f'))
+
+        with gl.util.bind(v):
+            with gl.util.enable_client_state(GL.GL_VERTEX_ARRAY):
+                GL.glVertexPointerf(v)
+                GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
+
+        return
         width, height = self.node_size
         x, y = self.node_center
         node = pygame.surface.Surface(self.node_size,
@@ -267,6 +301,7 @@ class Application(_apps.Application):
         self.screen.blit(trace, (0, 0))
 
     def draw_net(self):
+        return
         width, height = self.node_size
         x, y = self._node_coords(*self.tn.anchor)
         offset = min(width, height) - 2.5 * self.node_radius
@@ -301,20 +336,61 @@ class Application(_apps.Application):
 
         self.draw_trace()
 
-    def resize(self, mode):
-        self.mode = mode
-        self.node_size = width, height = self._coord(1 / self.tn.columns,
-                                                     1 / self.tn.rows)
-        self.node_radius = 3 * min(width, height) // 8
-        self.node_center = x, y = self._coord(0.5, 0.5, self.node_size)
+    def resize_net(self):
+        self.matrix = gl.util.ortho(self.tn.left - 0.5,
+                                    self.tn.right + 0.5,
+                                    self.tn.bottom - 0.5,
+                                    self.tn.top + 0.5,
+                                    1,
+                                    2)
+
+    def render(self):
+        print '-!- fps: ', self.context.clock.get_fps()
+        eventful = False
+
+        while self.client.have_events:
+            event = self.client.next_event()
+
+            if len(event.raw) <= 4:
+                self.ut.handle_midi(event.as_dword())
+
+                if self.ut.anchor_changed:
+                    anchor = self.ut.anchor
+                    if anchor != self.anchor:
+                        self.tn.move(anchor)
+                        self.anchor = anchor
+                        if self.trace[-1] != self.tn.anchor:
+                            self.trace.append(self.tn.anchor)
+
+                if self.tn.should_grow(min_dist=1):
+                    self.grow_count += 1
+
+                    if self.grow_count >= self.max_fps // 10:
+                        self.tn.grow(min_dist=1, by=1)
+                        self.resize_net()
+                        self.grow_count = 0
+
+        self.draw()
+
+    def draw(self):
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+        with gl.util.use_program(self.program) as program:
+            gl.util.transformation_matrix(program, self.matrix)
+
+            for column in range(self.tn.left, self.tn.right + 1):
+                for row in range(self.tn.bottom, self.tn.top + 1):
+                    self.draw_node(column, row)                
 
     def run(self):
         self.tn = net.ToneNet()
+        self.resize_net()
 
-        pygame.init()
+        self.context = gl.context.OpenGLContext(renderer=self.render,
+                                                max_fps=self.max_fps)
 
-        self.resize(self._parse_mode(self.cfg('mode', '640x480')))
-        self.screen = pygame.display.set_mode(self.mode)
+        mode = self.cfg('mode', '640x480')
+        self.context.setup(mode)
 
         self.colors = self.cfg('colors', self.default_colors)
         self.font = pygame.font.SysFont(name=self.cfg('font',
@@ -322,57 +398,18 @@ class Application(_apps.Application):
                                         size=self.cfg('font_size', 12),
                                         bold=False,
                                         italic=False)
-        self.clock = pygame.time.Clock()
 
         self.ut = utabor.get_uTabor()
         logic = os.path.join(self.prefix(), 'data', 'utabor', 'demo.mut')
         self.ut.load_logic(logic)
         self.ut.select_action('N', True)
-        print
-        self.ut.keys
 
-        running = True
+        self.program = self._compile_program('simple')
 
         with jack.create_client() as jack_client:
-            while running:
-                self.clock.tick(self.max_fps)
+            self.client = jack_client
 
-                eventful = False
-
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                    elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESCAPE:
-                            running = False
-                    elif event.type == pygame.VIDEORESIZE:
-                        self.resize((event.w, event.h))
-
-                while jack_client.have_events:
-                    event = jack_client.next_event()
-
-                    if len(event.raw) <= 4:
-                        self.ut.handle_midi(event.as_dword())
-
-                        if self.ut.anchor_changed:
-                            anchor = self.ut.anchor
-                            if anchor != self.anchor:
-                                self.tn.move(anchor)
-                                self.anchor = anchor
-                                if self.trace[-1] != self.tn.anchor:
-                                    self.trace.append(self.tn.anchor)
-
-                if self.tn.should_grow(min_dist=1):
-                    self.grow_count += 1
-
-                    if self.grow_count >= self.max_fps // 10:
-                        self.tn.grow(min_dist=1, by=1)
-                        self.resize(self.mode)
-                        self.grow_count = 0
-
-                self.screen.fill(self._color('screen', 'bg'))
-                self.draw_net()
-                pygame.display.flip()
+            self.context.run()
 
         utabor.destroy_uTabor()
         sys.exit()

@@ -49,6 +49,7 @@ class Application(_apps.Application):
                                    },
                       }
 
+    vsync = True
     max_fps = 60
     anchor = 60
     grow_count = 0
@@ -405,7 +406,8 @@ class Application(_apps.Application):
         self.tn = net.ToneNet()
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
-                                                max_fps=self.max_fps)
+                                                max_fps=self.max_fps,
+                                                vsync=self.vsync)
 
         mode = self.cfg('mode', '640x480')
         self.context.setup(mode)

@@ -8,12 +8,13 @@ class OpenGLContext(object):
     This sets up an OpenGL context and provides basic event handling support.
     """
 
-    def __init__(self, renderer, max_fps=60):
+    def __init__(self, renderer, max_fps=60, vsync=True):
         """Construct an OpenGL context
 
         renderer is a callback used to render the scene.
         The frame rate will be limited to at most max_fps frames per second.
         """
+        self.vsync = vsync
         self.running = False
         self.max_fps = max_fps
         self.handlers = {pygame.QUIT: [lambda e: self.quit_handler(e)],
@@ -48,6 +49,11 @@ class OpenGLContext(object):
         pygame.init()
         the_mode = self._parse_mode(mode)
 
+        try:
+            pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL,
+                                            1 if self.vsync else 0)
+        except:
+            pass  # GL_SWAP_CONTROL might not be available, ignore
         flags = pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF
 
         self.screen = pygame.display.set_mode(the_mode, flags)

@@ -284,6 +284,7 @@ HARMONIE
     nTerz={0,4,*7,*10}
     nDur ={0,*4,7}
     nMoll={0,3,7}
+    "nMoll={0,5,8}"
 
 " ====================================== Obertöne 
   Auf den weissen Tasten eine Obertonreihe, auf den schwarzen eine

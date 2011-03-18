@@ -4,16 +4,11 @@
 uniform mat4 transformation;
 
 #if (__VERSION__ > 120)
-in vec3 vertex;
+in vec4 gl_Vertex;
 #endif
 
 void main ()
 {
-#if (__VERSION__ <= 120)
   gl_Position = transformation * gl_Vertex;
-#else
-  gl_Position = transformation * vertex;
-#endif
-
   gl_PointSize = 25;
 } 

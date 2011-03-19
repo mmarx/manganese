@@ -12,6 +12,8 @@ class Vec2(object):
         if len(args) == 1:
             if isinstance(args[0], Vec2):
                 self.vec = args[0].vec
+            elif isinstance(args[0], complex):
+                self.vec = (args[0].real, args[0].imag)
             elif len(args[0]) == 2:
                 self.vec = tuple(args[0])
             else:

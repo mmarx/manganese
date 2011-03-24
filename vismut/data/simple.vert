@@ -1,8 +1,12 @@
 #version 120
 #extension all : disable
 
+attribute vec2 in_tex_coords;
+
 uniform vec3 translation;
 uniform mat4 transformation;
+
+varying vec2 tex_coords;
 
 #if (__VERSION__ > 120)
 in vec4 gl_Vertex;
@@ -11,4 +15,6 @@ in vec4 gl_Vertex;
 void main ()
 {
   gl_Position = transformation * (vec4(translation, 0.0) + gl_Vertex);
+
+  tex_coords = in_tex_coords;
 } 

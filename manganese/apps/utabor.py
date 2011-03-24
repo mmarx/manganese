@@ -2,15 +2,16 @@
 from __future__ import division
 
 import sys
-import math
 import os.path
+
+from math import ceil, log
 
 import numpy
 import pygame
 
 import OpenGL
 
-OpenGL.FULL_LOGGING = True
+OpenGL.FULL_LOGGING = False
 OpenGL.ERROR_ON_COPY = True
 OpenGL.FORWARD_COMPATIBLE_ONLY = True
 
@@ -34,24 +35,24 @@ import manganese.math.vector as vector
 
 class Application(_apps.Application):
 
-    default_colors = {'screen_bg': (255, 255, 255),
-                      'screen_fg': (0, 0, 0),
-                      'screen_hl': (50, 230, 230),
-                      'key_bg': {'active': (200, 230, 250),
-                                 'inactive': (160, 160, 220),
-                                 'anchor': (250, 200, 250),
-                                 'anchor_active': (220, 220, 250),
-                                 'anchor_initial': (200, 0, 0),
-                                 'anchor_initial_active': (255, 0, 0),
+    default_colors = {'screen_bg': (255, 255, 255, 255),
+                      'screen_fg': (0, 0, 0, 255),
+                      'screen_hl': (50, 230, 230, 255),
+                      'key_bg': {'active': (200, 230, 250, 255),
+                                 'inactive': (160, 160, 220, 255),
+                                 'anchor': (250, 200, 250, 255),
+                                 'anchor_active': (220, 220, 250, 255),
+                                 'anchor_initial': (200, 0, 0, 255),
+                                 'anchor_initial_active': (255, 0, 0, 255),
                                  },
-                      'key_fg': (80, 80, 80),
-                      'chord_bg': {'major': (255, 255, 0),
-                                   'minor': (255, 200, 0),
+                      'key_fg': (80, 80, 80, 255),
+                      'chord_bg': {'major': (255, 255, 0, 255),
+                                   'minor': (255, 200, 0, 255),
                                    },
                       }
 
-    vsync = True
-    max_fps = 60
+    vsync = not True
+    max_fps = 0
     anchor = 60
     grow_count = 0
     trace = [(0, 0),
@@ -68,6 +69,7 @@ class Application(_apps.Application):
 
         return GL.shaders.compileProgram(vertex, fragment)
 
+    @gl.util.normalized_color
     def _color(self, name, type, subtype=None):
         qualified_name = '%s_%s' % (name, type)
 
@@ -130,36 +132,32 @@ class Application(_apps.Application):
         return 'inactive'
 
     def draw_node(self, column, row):
-        loc = GL.glGetUniformLocation(self.program, 'translation')
-
-        with gl.util.bind(self.node_vbo):
-            GL.glEnableVertexAttribArray(0)
-            GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, self.node_vbo)
-            GL.glUniform3f(loc, column, row, 0)
-            GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.node_vertices)
-            GL.glDisableVertexAttribArray(0)
-
-        return
-        width, height = self.node_size
-        x, y = self.node_center
-        node = pygame.surface.Surface(self.node_size,
-                                      flags=pygame.SRCALPHA).convert_alpha()
-        node.fill((0, 0, 0, 0))
-
         color = self._color('key', 'bg', self._node_type(column, row))
+        label = self._text(self.tn.name(column, row), (0, 0, 0, 255)).convert_alpha()
 
-        pygame.draw.circle(node, color, self.node_center, self.node_radius)
-        pygame.draw.line(node, color, (0, y), ((width - x), y))
-        pygame.draw.line(node, color, ((width - x), y), (width, y))
-        pygame.draw.line(node, color, (x, 0), (x, (height - y)))
-        pygame.draw.line(node, color, (x, (height - y)), (x, height))
+        size = 2 ** ceil(log(max(label.get_size()), 2))
+        surface = pygame.surface.Surface((size, size),
+                                         flags=pygame.SRCALPHA).convert_alpha()
+        surface.fill((0, 0, 0, 0))
+        surface.blit(label, label.get_rect(center=(size // 2, size // 2)))
 
-        color = self._color('key', 'fg')
+        data = pygame.image.tostring(surface, "RGBA", True)
 
-        label = self._text(self.tn.name(column, row), color)
-        node.blit(label, label.get_rect(center=self.node_center))
+        tex = GL.glGenTextures(1)
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, size, size,
+                        0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, data)
+        GL.glUniform1i(self.locs['texture'], 0)
 
-        self.screen.blit(node, self._node_coords(column, row))
+        GL.glUniform3f(self.locs['translation'], column, row, 0)
+        GL.glUniform4f(self.locs['color'], *color)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.node_vertices)
+        GL.glDeleteTextures(tex)
 
     def draw_chord(self, nodes, type):
         ax, ay = self.tn.anchor
@@ -335,6 +333,24 @@ class Application(_apps.Application):
 
         self.draw_trace()
 
+    def init_gl(self):
+        self.program = self._compile_program('simple')
+
+        def uni(name):
+            return GL.glGetUniformLocation(self.program, name)
+
+        def att(name):
+            return GL.glGetAttribLocation(self.program, name)
+
+        self.locs = {'color': uni('color'),
+                     'texture': uni('texture0'),
+                     'texcoords': att('in_tex_coords'),
+                     'translation': uni('translation'),
+                     'transformation': uni('transformation'),
+                     }
+
+        GL.glClearColor(*self._color('screen', 'bg'))
+
     def resize_event(self, event):
         self.aspect = event.w / event.h
         self.resize_net()
@@ -362,14 +378,16 @@ class Application(_apps.Application):
         self.node_size = (w, h)
 
         node_vertices = gl.geometry.circle(center=(0, 0),
-                                           radius=.5,
+                                           radius=0.75,
                                            scale=self.node_size,
                                            subdivisions=5)
         self.node_vbo = vbo.VBO(numpy.array(node_vertices, 'f'))
         self.node_vertices = len(node_vertices)
+        self.polys = self.tn.columns * self.tn.rows * self.node_vertices
 
     def render(self):
-        print '-!- fps: ', self.context.clock.get_fps()
+        print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
+
         eventful = False
 
         while self.client.have_events:
@@ -397,14 +415,20 @@ class Application(_apps.Application):
         self.draw()
 
     def draw(self):
+        self.tn.set_active(self.ut.keys)        
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
         with gl.util.use_program(self.program) as program:
-            gl.util.transformation_matrix(program, self.matrix)
+            gl.util.transformation_matrix(program, self.matrix,
+                                          location=self.locs['transformation'])
 
-            for column in range(self.tn.left, self.tn.right + 1):
-                for row in range(self.tn.bottom, self.tn.top + 1):
-                    self.draw_node(column, row)                
+            with gl.util.draw_vbo(0, self.node_vbo, stride=20):
+                GL.glEnableVertexAttribArray(self.locs['texcoords'])
+                GL.glVertexAttribPointer(self.locs['texcoords'], 2, GL.GL_FLOAT, False, 20, self.node_vbo + 12)
+                for column in range(self.tn.left, self.tn.right + 1):
+                    for row in range(self.tn.bottom, self.tn.top + 1):
+                        self.draw_node(column, row)
+                GL.glDisableVertexAttribArray(self.locs['texcoords'])
 
     def run(self):
         self.tn = net.ToneNet()
@@ -416,7 +440,7 @@ class Application(_apps.Application):
         mode = self.cfg('mode', '640x480')
         self.context.setup(mode)
         self.aspect = mode[0] / mode[1]
-        self.resize_net()        
+        self.resize_net()
 
         self.colors = self.cfg('colors', self.default_colors)
         self.font = pygame.font.SysFont(name=self.cfg('font',
@@ -430,7 +454,7 @@ class Application(_apps.Application):
         self.ut.load_logic(logic)
         self.ut.select_action('N', True)
 
-        self.program = self._compile_program('simple')
+        self.init_gl()
 
         self.context.add_handler(pygame.VIDEORESIZE, self.resize_event)
 

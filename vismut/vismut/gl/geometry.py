@@ -20,12 +20,12 @@ def circle(center, radius, subdivisions=3, z=1.5, scale=None):
     else:
         x, y = r, r
 
-    vertices = [[-x, -y, z],
-                [x, -y, z],
-                [-x, y, z],
-                [x, -y, z],
-                [x, y, z],
-                [-x, y, z],
+    vertices = [[-x, -y, z, 0.0, 0.0],
+                [x, -y, z, 1.0, 0.0],
+                [-x, y, z, 0.0, 1.0],
+                [x, -y, z, 1.0, 0.0],
+                [x, y, z, 1.0, 1.0],
+                [-x, y, z, 0.0, 1.0],
                 ]
 
     def subdivide(fr, to, subdivisions):
@@ -39,9 +39,9 @@ def circle(center, radius, subdivisions=3, z=1.5, scale=None):
             new = Vec2(new[0] * scale[0],
                        new[1] * scale[1])
 
-        vertices.extend([[fr[0], fr[1], z],
-                         [new[0], new[1], z],
-                         [to[0], to[1], z],
+        vertices.extend([[fr[0], fr[1], z, 0.0, 0.0],
+                         [new[0], new[1], z, 0.0, 0.0],
+                         [to[0], to[1], z, 0.0, 0.0],
                          ])
 
         subdivide(fr, new, subdivisions - 1)

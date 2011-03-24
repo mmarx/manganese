@@ -24,6 +24,7 @@ from manganese.vismut import gl
 import manganese.vismut.gl.util
 import manganese.vismut.gl.context
 import manganese.vismut.gl.shaders
+import manganese.vismut.gl.geometry
 
 import manganese.utabor._utabor as utabor
 import manganese.midi.jack as jack
@@ -129,18 +130,14 @@ class Application(_apps.Application):
         return 'inactive'
 
     def draw_node(self, column, row):
-        w, h = self.node_size
-        v = vbo.VBO(numpy.array([
-            [column - 0.5 * w, row - 0.5 * h, 1.5],
-            [column + 0.5 * w, row - 0.5 * h, 1.5],
-            [column - 0.5 * w, row + 0.5 * h, 1.5],
-            [column + 0.5 * w, row + 0.5 * h, 1.5],
-            ], 'f'))
+        loc = GL.glGetUniformLocation(self.program, 'translation')
 
-        with gl.util.bind(v):
-            with gl.util.enable_client_state(GL.GL_VERTEX_ARRAY):
-                GL.glVertexPointerf(v)
-                GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
+        with gl.util.bind(self.node_vbo):
+            GL.glEnableVertexAttribArray(0)
+            GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, self.node_vbo)
+            GL.glUniform3f(loc, column, row, 0)
+            GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.node_vertices)
+            GL.glDisableVertexAttribArray(0)
 
         return
         width, height = self.node_size
@@ -363,6 +360,13 @@ class Application(_apps.Application):
             h /= scale
 
         self.node_size = (w, h)
+
+        node_vertices = gl.geometry.circle(center=(0, 0),
+                                           radius=.5,
+                                           scale=self.node_size,
+                                           subdivisions=5)
+        self.node_vbo = vbo.VBO(numpy.array(node_vertices, 'f'))
+        self.node_vertices = len(node_vertices)
 
     def render(self):
         print '-!- fps: ', self.context.clock.get_fps()

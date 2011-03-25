@@ -69,3 +69,20 @@ def label(center, radius, z=1.5, scale=None):
             [-x, y, z, 0.0, 1.0],
             [x, y, z, 1.0, 1.0],
             ]
+
+
+def grid(left, right, bottom, top):
+    pass
+
+
+def cage(offset, scale=(0.5, 0.5), z=1.5):
+    w, h = scale[0] * 2, scale[1] * 2
+
+    return [[-w, h * (-1 - offset), z],
+            [w, h * (-1 - offset), z],
+            [w * (2 + offset), 0.0, z],
+            [w * (2 + offset), h * (1 + offset), z],
+            [-w, h * (1 + offset), z],
+            [w * (-2 - offset), 0.0, z],
+            [-w, h * (-1 - offset), z],
+            ]

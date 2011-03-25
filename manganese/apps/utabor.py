@@ -55,6 +55,7 @@ class Application(_apps.Application):
     max_fps = 0
     anchor = 60
     grow_count = 0
+    node_radius = 0.75
     trace = [(0, 0),
              ]
 
@@ -382,20 +383,26 @@ class Application(_apps.Application):
         self.node_size = (w, h)
 
         node_vertices = gl.geometry.circle(center=(0, 0),
-                                           radius=0.75,
+                                           radius=self.node_radius,
                                            scale=self.node_size,
                                            subdivisions=5)
 
         label_vertices = gl.geometry.label(center=(0, 0),
-                                           radius=0.75,
+                                           radius=self.node_radius,
                                            scale=self.node_size)
 
+        cage_vertices = gl.geometry.cage(offset=0.55,
+                                         scale=self.node_size)
+        print cage_vertices
         self.node_vbo = vbo.VBO(numpy.array(node_vertices, 'f'))
         self.label_vbo = vbo.VBO(numpy.array(label_vertices, 'f'))
+        self.cage_vbo = vbo.VBO(numpy.array(cage_vertices, 'f'))
         self.node_vertices = len(node_vertices)
         self.label_vertices = len(label_vertices)
+        self.cage_vertices = len(cage_vertices)
         self.polys = self.tn.columns * self.tn.rows * (self.node_vertices +
-                                                       self.label_vertices)
+                                                       self.label_vertices) \
+                                                       + self.cage_vertices
 
     def render(self):
         print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
@@ -436,6 +443,15 @@ class Application(_apps.Application):
                                                              'transformation'))
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])
+
+            color = self._color('screen', 'hl')
+
+            with gl.util.draw_vbo(0, self.cage_vbo):
+                x, y = self.tn.anchor
+                GL.glUniform3f(self._loc('flat', 'translation'),
+                               x, y, 0.0)
+                GL.glUniform4f(self._loc('flat', 'color'), *color)
+                GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.cage_vertices)
 
             with gl.util.draw_vbo(0, self.node_vbo):
                 for column in range(self.tn.left, self.tn.right + 1):

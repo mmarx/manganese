@@ -26,23 +26,29 @@ def bind(buffer):
 
 
 @contextmanager
-def enable_client_state(state):
+def client_state(state):
     GL.glEnableClientState(state)
     yield
     GL.glDisableClientState(state)
 
 
 @contextmanager
-def draw_vbo(array, vbo, stride=0):
-    with bind(vbo):
-        GL.glEnableVertexAttribArray(array)
-        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, stride, vbo)
-        yield
-        GL.glDisableVertexAttribArray(array)
+def vertex_attrib_array(array):
+    GL.glEnableVertexAttribArray(array)
+    yield
+    GL.glDisableVertexAttribArray(array)
 
 
 @contextmanager
-def enable(property):
+def draw_vbo(array, vbo, stride=0):
+    with bind(vbo):
+        with vertex_attrib_array(array):
+            GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, stride, vbo)
+            yield
+
+
+@contextmanager
+def enabled(property):
     GL.glEnable(property)
     yield
     GL.glDisable(property)

@@ -58,16 +58,8 @@ class Application(_apps.Application):
     trace = [(0, 0),
              ]
 
-    def _compile_shader(self, name, type):
-        with open(self.data(gl.shaders.filename(name, type),
-                            app='vismut')) as shader:
-            return gl.shaders.compile_shader(shader.read(), type)
-
-    def _compile_program(self, name):
-        vertex = self._compile_shader(name, gl.shaders.VERTEX)
-        fragment = self._compile_shader(name, gl.shaders.FRAGMENT)
-
-        return GL.shaders.compileProgram(vertex, fragment)
+    def _loc(self, prog, name):
+        return self.locs[prog][name]
 
     @gl.util.normalized_color
     def _color(self, name, type, subtype=None):
@@ -87,30 +79,6 @@ class Application(_apps.Application):
             return
 
         return self.font.render(the_text, True, color)
-
-    def _coord(self, x, y, rect=None, center=False):
-        if rect is not None:
-            abs_x, abs_y = rect
-        else:
-            abs_x, abs_y = self.mode
-
-        if center:
-            off_x, off_y = self.node_size            
-            off_x *= 0.5
-            off_y *= 0.5
-        else:
-            off_x = off_y = 0
-
-        return (int(x * abs_x + off_x), int(y * abs_y + off_y))
-
-    def _node_at(self, x, y):
-        nx = x - self.tn.left
-        ny = self.tn.top - y
-
-        return ((nx / self.tn.columns), (ny / self.tn.rows))
-
-    def _node_coords(self, x, y, **kwargs):
-        return self._coord(*self._node_at(x, y), **kwargs)
 
     def _node_type(self, x, y):
         is_anchor = self.tn.is_anchor(x, y)
@@ -133,7 +101,14 @@ class Application(_apps.Application):
 
     def draw_node(self, column, row):
         color = self._color('key', 'bg', self._node_type(column, row))
-        label = self._text(self.tn.name(column, row), (0, 0, 0, 255)).convert_alpha()
+
+        GL.glUniform3f(self._loc('flat', 'translation'), column, row, 0)
+        GL.glUniform4f(self._loc('flat', 'color'), *color)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.node_vertices)
+
+    def draw_node_label(self, column, row):
+        label = self._text(self.tn.name(column, row),
+                           (0, 0, 0, 255)).convert_alpha()
 
         size = 2 ** ceil(log(max(label.get_size()), 2))
         surface = pygame.surface.Surface((size, size),
@@ -146,17 +121,22 @@ class Application(_apps.Application):
         tex = GL.glGenTextures(1)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S,
+                           GL.GL_REPEAT)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T,
+                           GL.GL_REPEAT)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER,
+                           GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER,
+                           GL.GL_LINEAR)
         GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, size, size,
                         0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, data)
-        GL.glUniform1i(self.locs['texture'], 0)
 
-        GL.glUniform3f(self.locs['translation'], column, row, 0)
-        GL.glUniform4f(self.locs['color'], *color)
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.node_vertices)
+        GL.glUniform1i(self._loc('textured', 'texture'), 0)
+        GL.glUniform3f(self._loc('textured', 'translation'), column, row, 0)
+
+        GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.label_vertices)
+
         GL.glDeleteTextures(tex)
 
     def draw_chord(self, nodes, type):
@@ -334,19 +314,39 @@ class Application(_apps.Application):
         self.draw_trace()
 
     def init_gl(self):
-        self.program = self._compile_program('simple')
+        def compile(name):
+            def compile_shader(type):
+                with open(self.data(gl.shaders.filename(name, type),
+                                    app='vismut')) as shader:
+                    return gl.shaders.compile_shader(shader.read(), type)
 
-        def uni(name):
-            return GL.glGetUniformLocation(self.program, name)
+            vertex = compile_shader(gl.shaders.VERTEX)
+            fragment = compile_shader(gl.shaders.FRAGMENT)
 
-        def att(name):
-            return GL.glGetAttribLocation(self.program, name)
+            return GL.shaders.compileProgram(vertex, fragment)
 
-        self.locs = {'color': uni('color'),
-                     'texture': uni('texture0'),
-                     'texcoords': att('in_tex_coords'),
-                     'translation': uni('translation'),
-                     'transformation': uni('transformation'),
+        self.programs = {'flat': compile('flat'),
+                         'textured': compile('textured'),
+                         }
+
+        def uni(prog, name):
+            return GL.glGetUniformLocation(self.programs[prog], name)
+
+        def att(prog, name):
+            return GL.glGetAttribLocation(self.programs[prog], name)
+
+        self.locs = {'flat': {'color': uni('flat', 'color'),
+                              'translation': uni('flat', 'translation'),
+                              'transformation': uni('flat', 'transformation'),
+                              },
+                     'textured': {'texture': uni('textured', 'the_texture'),
+                                  'texcoords': att('textured',
+                                                   'the_tex_coords'),
+                                  'translation': uni('textured',
+                                                     'translation'),
+                                  'transformation': uni('textured',
+                                                        'transformation'),
+                                  },
                      }
 
         GL.glClearColor(*self._color('screen', 'bg'))
@@ -381,9 +381,17 @@ class Application(_apps.Application):
                                            radius=0.75,
                                            scale=self.node_size,
                                            subdivisions=5)
+
+        label_vertices = gl.geometry.label(center=(0, 0),
+                                           radius=0.75,
+                                           scale=self.node_size)
+
         self.node_vbo = vbo.VBO(numpy.array(node_vertices, 'f'))
+        self.label_vbo = vbo.VBO(numpy.array(label_vertices, 'f'))
         self.node_vertices = len(node_vertices)
-        self.polys = self.tn.columns * self.tn.rows * self.node_vertices
+        self.label_vertices = len(label_vertices)
+        self.polys = self.tn.columns * self.tn.rows * (self.node_vertices +
+                                                       self.label_vertices)
 
     def render(self):
         print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
@@ -415,20 +423,37 @@ class Application(_apps.Application):
         self.draw()
 
     def draw(self):
-        self.tn.set_active(self.ut.keys)        
+        self.tn.set_active(self.ut.keys)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-        with gl.util.use_program(self.program) as program:
+        with gl.util.use_program(self.programs['flat']) as program:
             gl.util.transformation_matrix(program, self.matrix,
-                                          location=self.locs['transformation'])
+                                          location=self._loc('flat',
+                                                             'transformation'))
 
-            with gl.util.draw_vbo(0, self.node_vbo, stride=20):
-                GL.glEnableVertexAttribArray(self.locs['texcoords'])
-                GL.glVertexAttribPointer(self.locs['texcoords'], 2, GL.GL_FLOAT, False, 20, self.node_vbo + 12)
+            with gl.util.draw_vbo(0, self.node_vbo):
                 for column in range(self.tn.left, self.tn.right + 1):
                     for row in range(self.tn.bottom, self.tn.top + 1):
                         self.draw_node(column, row)
-                GL.glDisableVertexAttribArray(self.locs['texcoords'])
+
+        with gl.util.use_program(self.programs['textured']) as program:
+            gl.util.transformation_matrix(program, self.matrix,
+                                          location=self._loc('textured',
+                                                             'transformation'))
+            with gl.util.draw_vbo(0, self.label_vbo, stride=20):
+                with gl.util.enabled(GL.GL_BLEND):
+                    GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+                    loc = self._loc('textured', 'texcoords')
+                    with gl.util.vertex_attrib_array(loc):
+                        GL.glVertexAttribPointer(loc,
+                                                 2,
+                                                 GL.GL_FLOAT,
+                                                 False,
+                                                 20,
+                                                 self.label_vbo + 12)
+                        for column in range(self.tn.left, self.tn.right + 1):
+                            for row in range(self.tn.bottom, self.tn.top + 1):
+                                self.draw_node_label(column, row)
 
     def run(self):
         self.tn = net.ToneNet()

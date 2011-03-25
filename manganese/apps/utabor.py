@@ -11,6 +11,8 @@ import pygame
 
 import OpenGL
 
+OpenGL.ERROR_CHECKING = True
+OpenGL.ERROR_LOGGING = True
 OpenGL.FULL_LOGGING = False
 OpenGL.ERROR_ON_COPY = True
 OpenGL.FORWARD_COMPATIBLE_ONLY = True
@@ -59,6 +61,10 @@ class Application(_apps.Application):
     trace = [(0, 0),
              ]
 
+    vbos = {}
+    textures = {}
+    vertices = {}
+
     def _loc(self, prog, name):
         return self.locs[prog][name]
 
@@ -100,14 +106,11 @@ class Application(_apps.Application):
 
         return 'inactive'
 
-    def draw_node(self, column, row):
-        color = self._color('key', 'bg', self._node_type(column, row))
+    def _geometry(self, name, vertices):
+        self.vbos[name] = vbo.VBO(numpy.array(vertices, 'f'))
+        self.vertices[name] = len(vertices)
 
-        GL.glUniform3f(self._loc('flat', 'translation'), column, row, 0)
-        GL.glUniform4f(self._loc('flat', 'color'), *color)
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.node_vertices)
-
-    def draw_node_label(self, column, row):
+    def _make_label(self, column, row):
         label = self._text(self.tn.name(column, row),
                            (0, 0, 0, 255)).convert_alpha()
 
@@ -133,12 +136,19 @@ class Application(_apps.Application):
         GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, size, size,
                         0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, data)
 
-        GL.glUniform1i(self._loc('textured', 'texture'), 0)
+        return tex
+
+    def draw_node(self, column, row):
+        GL.glUniform3f(self._loc('flat', 'translation'), column, row, 0)
+        GL.glUniform4f(self._loc('flat', 'color'),
+                       *self._color('key', 'bg',
+                                    self._node_type(column, row)))
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertices['node'])
+
+    def draw_node_label(self, column, row):
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.textures[column][row])
         GL.glUniform3f(self._loc('textured', 'translation'), column, row, 0)
-
-        GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.label_vertices)
-
-        GL.glDeleteTextures(tex)
+        GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertices['label'])
 
     def draw_chord(self, nodes, type):
         ax, ay = self.tn.anchor
@@ -146,7 +156,6 @@ class Application(_apps.Application):
         chord = vbo.VBO(numpy.array(points, 'f'))
 
         with gl.util.draw_vbo(0, chord):
-            GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
             GL.glUniform4f(self._loc('flat', 'color'),
                            *self._color('chord', 'bg', type))
             GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
@@ -360,7 +369,7 @@ class Application(_apps.Application):
         self.aspect = event.w / event.h
         self.resize_net()
 
-    def resize_net(self):
+    def resize_net(self, growth=None):
         self.matrix = gl.util.ortho(self.tn.left - 0.5,
                                     self.tn.right + 0.5,
                                     self.tn.bottom - 0.5,
@@ -382,27 +391,36 @@ class Application(_apps.Application):
 
         self.node_size = (w, h)
 
-        node_vertices = gl.geometry.circle(center=(0, 0),
-                                           radius=self.node_radius,
-                                           scale=self.node_size,
-                                           subdivisions=5)
+        self._geometry('node', gl.geometry.circle(center=(0, 0),
+                                                  radius=self.node_radius,
+                                                  scale=self.node_size,
+                                                  subdivisions=5))
 
-        label_vertices = gl.geometry.label(center=(0, 0),
-                                           radius=self.node_radius,
-                                           scale=self.node_size)
+        self._geometry('label', gl.geometry.label(center=(0, 0),
+                                                  radius=self.node_radius,
+                                                  scale=self.node_size))
 
-        cage_vertices = gl.geometry.cage(offset=(0.5, 0.45),
-                                         scale=self.node_size)
+        self._geometry('cage', gl.geometry.cage(offset=(0.5, 0.45),
+                                                scale=self.node_size))
 
-        self.node_vbo = vbo.VBO(numpy.array(node_vertices, 'f'))
-        self.label_vbo = vbo.VBO(numpy.array(label_vertices, 'f'))
-        self.cage_vbo = vbo.VBO(numpy.array(cage_vertices, 'f'))
-        self.node_vertices = len(node_vertices)
-        self.label_vertices = len(label_vertices)
-        self.cage_vertices = len(cage_vertices)
-        self.polys = self.tn.columns * self.tn.rows * (self.node_vertices +
-                                                       self.label_vertices) \
-                                                       + self.cage_vertices
+        self._geometry('grid', gl.geometry.grid(self.tn.left, self.tn.right,
+                                                self.tn.bottom, self.tn.top))
+
+        self.polys = (self.tn.columns * self.tn.rows *
+                      (self.vertices['node'] + self.vertices['label']) +
+                      self.vertices['cage'])
+
+        if growth is not None:
+            pass                  # TODO: only create the new textures
+
+        for column in range(self.tn.left, self.tn.right + 1):
+            for row in range(self.tn.bottom, self.tn.top + 1):
+                tex = self._make_label(column, row)
+                if column in self.textures:
+                    self.textures[column][row] = tex
+                else:
+                    self.textures[column] = {row: tex,
+                                             }
 
     def render(self):
         print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
@@ -427,8 +445,8 @@ class Application(_apps.Application):
                     self.grow_count += 1
 
                     if self.grow_count >= self.max_fps // 10:
-                        self.tn.grow(min_dist=1, by=1)
-                        self.resize_net()
+                        growth = self.tn.grow(min_dist=1, by=1)
+                        self.resize_net(growth)
                         self.grow_count = 0
 
         self.draw()
@@ -441,19 +459,25 @@ class Application(_apps.Application):
             gl.util.transformation_matrix(program, self.matrix,
                                           location=self._loc('flat',
                                                              'transformation'))
+            GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])
 
+            with gl.util.draw_vbo(0, self.vbos['grid']):
+                GL.glUniform4f(self._loc('flat', 'color'),
+                               *self._color('key', 'bg', 'inactive'))
+                GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['grid'])
+
             color = self._color('screen', 'hl')
 
-            with gl.util.draw_vbo(0, self.cage_vbo):
+            with gl.util.draw_vbo(0, self.vbos['cage']):
                 x, y = self.tn.anchor
                 GL.glUniform3f(self._loc('flat', 'translation'),
                                x, y, 0.0)
                 GL.glUniform4f(self._loc('flat', 'color'), *color)
-                GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.cage_vertices)
+                GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.vertices['cage'])
 
-            with gl.util.draw_vbo(0, self.node_vbo):
+            with gl.util.draw_vbo(0, self.vbos['node']):
                 for column in range(self.tn.left, self.tn.right + 1):
                     for row in range(self.tn.bottom, self.tn.top + 1):
                         self.draw_node(column, row)
@@ -462,17 +486,14 @@ class Application(_apps.Application):
             gl.util.transformation_matrix(program, self.matrix,
                                           location=self._loc('textured',
                                                              'transformation'))
-            with gl.util.draw_vbo(0, self.label_vbo, stride=20):
+            with gl.util.draw_vbo(0, self.vbos['label'], stride=20):
                 with gl.util.enabled(GL.GL_BLEND):
                     GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+                    GL.glUniform1i(self._loc('textured', 'texture'), 0)
                     loc = self._loc('textured', 'texcoords')
                     with gl.util.vertex_attrib_array(loc):
-                        GL.glVertexAttribPointer(loc,
-                                                 2,
-                                                 GL.GL_FLOAT,
-                                                 False,
-                                                 20,
-                                                 self.label_vbo + 12)
+                        GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False,
+                                                 20, self.vbos['label'] + 12)
                         for column in range(self.tn.left, self.tn.right + 1):
                             for row in range(self.tn.bottom, self.tn.top + 1):
                                 self.draw_node_label(column, row)
@@ -487,7 +508,6 @@ class Application(_apps.Application):
         mode = self.cfg('mode', '640x480')
         self.context.setup(mode)
         self.aspect = mode[0] / mode[1]
-        self.resize_net()
 
         self.colors = self.cfg('colors', self.default_colors)
         self.font = pygame.font.SysFont(name=self.cfg('font',
@@ -495,6 +515,8 @@ class Application(_apps.Application):
                                         size=self.cfg('font_size', 12),
                                         bold=False,
                                         italic=False)
+
+        self.resize_net()
 
         self.ut = utabor.get_uTabor()
         logic = os.path.join(self.prefix(), 'data', 'utabor', 'demo.mut')

@@ -124,19 +124,26 @@ class ToneNet(object):
 
     def grow(self, min_dist=0, by=2):
         ax, ay = self.anchor
+        dl = dr = db = dt = 0
 
         dist = ax - 2 - self.left
         if dist < min_dist:
-            self.left -= max(by, min_dist - dist)
+            dl = max(by, min_dist - dist)
+            self.left -= dl
 
         dist = self.right - ax - 2
         if dist < min_dist:
-            self.right += max(by, min_dist - dist)
+            dr = max(by, min_dist - dist)
+            self.right += dr
 
         dist = self.top - ay - 1
         if dist < min_dist:
-            self.top += max(by, min_dist - dist)
+            dt = max(by, min_dist - dist)
+            self.top += dt
 
         dist = ay - 1 - self.bottom
         if dist < min_dist:
-            self.bottom -= max(by, min_dist - dist)
+            db = max(by, min_dist - dist)
+            self.bottom -= db
+
+        return (dl, dr, db, dt)

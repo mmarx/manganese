@@ -71,8 +71,20 @@ def label(center, radius, z=1.5, scale=None):
             ]
 
 
-def grid(left, right, bottom, top):
-    pass
+def grid(left, right, bottom, top, z=1.5):
+    grid = []
+
+    for column in range(left, right + 1):
+        grid.extend([[column, bottom - 1, z],
+                     [column, top + 1, z],
+                     ])
+
+    for row in range(bottom, top + 1):
+        grid.extend([[left - 1, row, z],
+                     [right + 1, row, z],
+                     ])
+
+    return grid
 
 
 def cage(offset, scale, z=1.5):

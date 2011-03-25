@@ -75,14 +75,18 @@ def grid(left, right, bottom, top):
     pass
 
 
-def cage(offset, scale=(0.5, 0.5), z=1.5):
-    w, h = scale[0] * 2, scale[1] * 2
+def cage(offset, scale, z=1.5):
+    xo, yo = offset
+    xs, ys = scale
 
-    return [[-w, h * (-1 - offset), z],
-            [w, h * (-1 - offset), z],
-            [w * (2 + offset), 0.0, z],
-            [w * (2 + offset), h * (1 + offset), z],
-            [-w, h * (1 + offset), z],
-            [w * (-2 - offset), 0.0, z],
-            [-w, h * (-1 - offset), z],
+    xo *= 2 * xs
+    yo *= 2 * ys
+
+    return [[-1 - 0.5 * xo, -1 - yo, z],
+            [1 + 0.5 * xo, -1 - yo, z],
+            [2 + xo, -0.25 * yo, z],
+            [2 + xo, 1 + yo, z],
+            [-1 - 0.5 * xo, 1 + yo, z],
+            [-2 - 1.125 * xo, 0.0, z],
+            [-1 - 0.5 * xo, -1 - yo, z],
             ]

@@ -391,9 +391,9 @@ class Application(_apps.Application):
                                            radius=self.node_radius,
                                            scale=self.node_size)
 
-        cage_vertices = gl.geometry.cage(offset=0.55,
+        cage_vertices = gl.geometry.cage(offset=(0.5, 0.45),
                                          scale=self.node_size)
-        print cage_vertices
+
         self.node_vbo = vbo.VBO(numpy.array(node_vertices, 'f'))
         self.label_vbo = vbo.VBO(numpy.array(label_vertices, 'f'))
         self.cage_vbo = vbo.VBO(numpy.array(cage_vertices, 'f'))

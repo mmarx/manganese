@@ -141,15 +141,19 @@ class Application(_apps.Application):
 
     def draw_chord(self, nodes, type):
         ax, ay = self.tn.anchor
-        points = [self._node_coords(ax + x, ay + y, center=True)
-                  for x, y in nodes]
+        points = [(ax + x, ay + y, 2.0) for x, y in nodes]
+        chord = vbo.VBO(numpy.array(points, 'f'))
 
-        pygame.draw.polygon(self.screen,
-                            self._color('chord', 'bg', type),
-                            points, 0)
-        pygame.draw.polygon(self.screen,
-                            self._color('screen', 'fg'),
-                            points, 1)
+        with gl.util.draw_vbo(0, chord):
+            GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
+            GL.glUniform4f(self._loc('flat', 'color'),
+                           *self._color('chord', 'bg', type))
+            GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
+            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE)
+            GL.glUniform4f(self._loc('flat', 'color'),
+                           *self._color('screen', 'fg'))
+            GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
+            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL)
 
     def draw_chords(self, nodes):
         if len(nodes) < 3:
@@ -430,6 +434,8 @@ class Application(_apps.Application):
             gl.util.transformation_matrix(program, self.matrix,
                                           location=self._loc('flat',
                                                              'transformation'))
+            self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
+                              for key in self.ut.keys])
 
             with gl.util.draw_vbo(0, self.node_vbo):
                 for column in range(self.tn.left, self.tn.right + 1):

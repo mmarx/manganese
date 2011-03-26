@@ -365,11 +365,18 @@ class Application(_apps.Application):
 
         GL.glClearColor(*self._color('screen', 'bg'))
 
+    def cleanup_gl(self):
+        GL.glDeleteTextures(numpy.array([item for column in self.textures
+                                         for item
+                                         in self.textures[column]],
+                                        'uint32'))
+        self.textures = {}
+
     def resize_event(self, event):
         self.aspect = event.w / event.h
         self.resize_net()
 
-    def resize_net(self, growth=None):
+    def resize_net(self):
         self.matrix = gl.util.ortho(self.tn.left - 0.5,
                                     self.tn.right + 0.5,
                                     self.tn.bottom - 0.5,
@@ -410,16 +417,16 @@ class Application(_apps.Application):
                       (self.vertices['node'] + self.vertices['label']) +
                       self.vertices['cage'])
 
-        if growth is not None:
-            pass                  # TODO: only create the new textures
-
         for column in range(self.tn.left, self.tn.right + 1):
             for row in range(self.tn.bottom, self.tn.top + 1):
                 tex = self._make_label(column, row)
                 if column in self.textures:
-                    self.textures[column][row] = tex
+                    if row not in self.textures[column]:
+                        self.textures[column][row] = self._make_label(column,
+                                                                      row)
                 else:
-                    self.textures[column] = {row: tex,
+                    self.textures[column] = {row: self._make_label(column,
+                                                                   row),
                                              }
 
     def render(self):
@@ -445,8 +452,8 @@ class Application(_apps.Application):
                     self.grow_count += 1
 
                     if self.grow_count >= self.max_fps // 10:
-                        growth = self.tn.grow(min_dist=1, by=1)
-                        self.resize_net(growth)
+                        self.tn.grow(min_dist=1, by=1)
+                        self.resize_net()
                         self.grow_count = 0
 
         self.draw()
@@ -531,6 +538,8 @@ class Application(_apps.Application):
             self.client = jack_client
 
             self.context.run()
+
+        self.cleanup_gl()
 
         utabor.destroy_uTabor()
         sys.exit()

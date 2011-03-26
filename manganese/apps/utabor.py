@@ -152,7 +152,7 @@ class Application(_apps.Application):
 
     def draw_chord(self, nodes, type):
         ax, ay = self.tn.anchor
-        points = [(ax + x, ay + y, 2.0) for x, y in nodes]
+        points = [(ax + x, ay + y, 0.45) for x, y in nodes]
         chord = vbo.VBO(numpy.array(points, 'f'))
 
         with gl.util.draw_vbo(0, chord):
@@ -289,43 +289,19 @@ class Application(_apps.Application):
                             surface=trace,
                             color=color(i, count - 1))
 
-        self.screen.blit(trace, (0, 0))
+    def draw_grid(self):
+        GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
 
-    def draw_net(self):
-        return
-        width, height = self.node_size
-        x, y = self._node_coords(*self.tn.anchor)
-        offset = min(width, height) - 2.5 * self.node_radius
+        with gl.util.draw_vbo(0, self.vbos['grid']):
+            GL.glUniform4f(self._loc('flat', 'color'),
+                           *self._color('key', 'bg', 'inactive'))
+            GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['grid'])
 
-        points = [(x - width + offset, y - 1 * height + offset),
-                  (x - width + offset, y + 0 * height),
-                  (x - 2 * width + offset, y + 0 * height),
-                  (x - 2 * width + offset, y + 1 * height - offset),
-                  (x - width + offset, y + 1 * height - offset),
-                  (x - width + offset, y + 2 * height - offset),
-                  (x + 2 * width + offset, y + 2 * height - offset),
-                  (x + 2 * width + offset, y + 1 * height - offset),
-                  (x + 3 * width + offset, y + 1 * height - offset),
-                  (x + 3 * width + offset, y - 1 * height + offset),
-                  ]
-
-        pygame.draw.polygon(self.screen,
-                            self._color('screen', 'hl'),
-                            points, 0)
-
-        self.tn.set_active(self.ut.keys)
-        self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
-                          for key in self.ut.keys])
-
-        for column in range(self.tn.left, self.tn.right + 1):
-            for row in range(self.tn.bottom, self.tn.top + 1):
-                self.draw_node(column, row)
-
-        pygame.draw.polygon(self.screen,
-                            self._color('screen', 'fg'),
-                            points, 1)
-
-        self.draw_trace()
+    def draw_cage(self):
+        with gl.util.draw_vbo(0, self.vbos['cage']):
+            GL.glUniform4f(self._loc('flat', 'color'),
+                           *self._color('screen', 'fg'))
+            GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.vertices['cage'])
 
     def init_gl(self):
         def compile(name):
@@ -364,6 +340,9 @@ class Application(_apps.Application):
                      }
 
         GL.glClearColor(*self._color('screen', 'bg'))
+        GL.glEnable(GL.GL_DEPTH_TEST)
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
     def cleanup_gl(self):
         GL.glDeleteTextures(numpy.array([item for column in self.textures
@@ -381,8 +360,8 @@ class Application(_apps.Application):
                                     self.tn.right + 0.5,
                                     self.tn.bottom - 0.5,
                                     self.tn.top + 0.5,
-                                    1,
-                                    2)
+                                    0,
+                                    1)
 
         scale = self.tn.columns / self.tn.rows
 
@@ -401,17 +380,20 @@ class Application(_apps.Application):
         self._geometry('node', gl.geometry.circle(center=(0, 0),
                                                   radius=self.node_radius,
                                                   scale=self.node_size,
-                                                  subdivisions=5))
+                                                  subdivisions=5,
+                                                  z=0.5))
 
         self._geometry('label', gl.geometry.label(center=(0, 0),
                                                   radius=self.node_radius,
-                                                  scale=self.node_size))
+                                                  scale=self.node_size,
+                                                  z=0.75))
 
         self._geometry('cage', gl.geometry.cage(offset=(0.5, 0.45),
-                                                scale=self.node_size))
+                                                scale=self.node_size, z=0.25))
 
         self._geometry('grid', gl.geometry.grid(self.tn.left, self.tn.right,
-                                                self.tn.bottom, self.tn.top))
+                                                self.tn.bottom, self.tn.top,
+                                                z=0.125))
 
         self.polys = (self.tn.columns * self.tn.rows *
                       (self.vertices['node'] + self.vertices['label']) +
@@ -460,29 +442,21 @@ class Application(_apps.Application):
 
     def draw(self):
         self.tn.set_active(self.ut.keys)
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
         with gl.util.use_program(self.programs['flat']) as program:
             gl.util.transformation_matrix(program, self.matrix,
                                           location=self._loc('flat',
                                                              'transformation'))
-            GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
+            self.draw_grid()
+
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])
 
-            with gl.util.draw_vbo(0, self.vbos['grid']):
-                GL.glUniform4f(self._loc('flat', 'color'),
-                               *self._color('key', 'bg', 'inactive'))
-                GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['grid'])
+            x, y = self.tn.anchor
+            GL.glUniform3f(self._loc('flat', 'translation'), x, y, 0.0)
 
-            color = self._color('screen', 'hl')
-
-            with gl.util.draw_vbo(0, self.vbos['cage']):
-                x, y = self.tn.anchor
-                GL.glUniform3f(self._loc('flat', 'translation'),
-                               x, y, 0.0)
-                GL.glUniform4f(self._loc('flat', 'color'), *color)
-                GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.vertices['cage'])
+            self.draw_cage()
 
             with gl.util.draw_vbo(0, self.vbos['node']):
                 for column in range(self.tn.left, self.tn.right + 1):
@@ -494,16 +468,14 @@ class Application(_apps.Application):
                                           location=self._loc('textured',
                                                              'transformation'))
             with gl.util.draw_vbo(0, self.vbos['label'], stride=20):
-                with gl.util.enabled(GL.GL_BLEND):
-                    GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-                    GL.glUniform1i(self._loc('textured', 'texture'), 0)
-                    loc = self._loc('textured', 'texcoords')
-                    with gl.util.vertex_attrib_array(loc):
-                        GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False,
-                                                 20, self.vbos['label'] + 12)
-                        for column in range(self.tn.left, self.tn.right + 1):
-                            for row in range(self.tn.bottom, self.tn.top + 1):
-                                self.draw_node_label(column, row)
+                GL.glUniform1i(self._loc('textured', 'texture'), 0)
+                loc = self._loc('textured', 'texcoords')
+                with gl.util.vertex_attrib_array(loc):
+                    GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False,
+                                             20, self.vbos['label'] + 12)
+                    for column in range(self.tn.left, self.tn.right + 1):
+                        for row in range(self.tn.bottom, self.tn.top + 1):
+                            self.draw_node_label(column, row)
 
     def run(self):
         self.tn = net.ToneNet()

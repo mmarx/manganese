@@ -55,7 +55,7 @@ def circle(center, radius, subdivisions=3, z=1.5, scale=None):
     return vertices
 
 
-def label(center, radius, z=1.5, scale=None):
+def label(center, radius, z=0.5, scale=None):
     translate = Vec2(center)
     r = radius * sin(pi / 4)
 
@@ -71,7 +71,7 @@ def label(center, radius, z=1.5, scale=None):
             ]
 
 
-def grid(left, right, bottom, top, z=1.5):
+def grid(left, right, bottom, top, z=0.5):
     grid = []
 
     for column in range(left, right + 1):
@@ -87,7 +87,7 @@ def grid(left, right, bottom, top, z=1.5):
     return grid
 
 
-def cage(offset, scale, z=1.5):
+def cage(offset, scale, z=0.5):
     xo, yo = offset
     xs, ys = scale
 

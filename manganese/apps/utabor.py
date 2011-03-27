@@ -57,7 +57,7 @@ class Application(_apps.Application):
     max_fps = 0
     anchor = 60
     grow_count = 0
-    node_radius = 0.75
+    node_radius = 0.25
     trace = [(0, 0),
              ]
 
@@ -366,9 +366,9 @@ class Application(_apps.Application):
         scale = self.tn.columns / self.tn.rows
 
         if self.aspect <= 1:
-            w, h = (0.5 * self.aspect, 0.5)
+            w, h = (self.aspect, 1.0)
         else:
-            w, h = (0.5, 0.5 * self.aspect)
+            w, h = (1.0, self.aspect)
 
         if scale <= 1:
             w /= scale

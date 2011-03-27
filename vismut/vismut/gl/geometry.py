@@ -91,8 +91,8 @@ def cage(offset, scale, z=0.5):
     xo, yo = offset
     xs, ys = scale
 
-    xo *= 2 * xs
-    yo *= 2 * ys
+    xo *= xs
+    yo *= ys
 
     return [[-1 - 0.5 * xo, -1 - yo, z],
             [1 + 0.5 * xo, -1 - yo, z],

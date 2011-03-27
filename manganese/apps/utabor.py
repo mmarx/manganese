@@ -203,7 +203,10 @@ class Application(_apps.Application):
                 if (0, 1) in nodes:
                     self.draw_chord([(1, 1), (1, 0), (0, 1)], 'minor')
 
-    def draw_arrow(self, src, dst, surface, color):
+    def draw_arrow(self, src, dst, color, z=0.625):
+        def point(p):
+            return [p[0], p[1], z]
+
         s = vector.Vec2(src)
         d = vector.Vec2(dst)
 
@@ -214,43 +217,39 @@ class Application(_apps.Application):
         else:
             is_arc = (s[0] == d[0]) or (s[1] == d[1])
 
-        points = [self._node_coords(*node, center=True)
-                  for node in [src, dst]]
+        points = [point(src),
+                  point(dst),
+                  ]
 
-        offset = vector.Vec2(self.node_size).norm * 0.175
-        path = (-vector.Vec2(points[0]) +
-                vector.Vec2(points[1]))
+        offset = self.node_radius * 0.175 * 2
+        direction = (-s + d).normalized
 
-        direction = path.normalized
-
-        points[0] = (vector.Vec2(points[0]) +
-                     direction * self.node_radius +
-                     direction.normal * 0.2 * self.node_radius).vec
-        points[1] = (vector.Vec2(points[1]) -
-                     direction * self.node_radius +
-                     direction.normal * 0.2 * self.node_radius).vec
-        mid = vector.Vec2(points[1]) - (direction * 0.2 * self.node_radius)
+        points[0][0:2] = (s + direction * self.node_radius +
+                          direction.normal * offset).vec
+        points[1][0:2] = (d - direction * self.node_radius +
+                          direction.normal * offset).vec
+        mid = (vector.Vec2(points[1][0:2]) -
+               (direction * offset))
 
         if is_arc:
-            points.insert(1, (vector.Vec2(points[1]) -
-                              direction * offset +
-                              direction.normal * offset).vec)
-            points.insert(1, (vector.Vec2(points[0]) +
-                              direction * offset +
-                              direction.normal * offset).vec)
+            points.insert(1, point(vector.Vec2(points[1][0:2]) -
+                                   direction * offset +
+                                   direction.normal * offset))
+            points.insert(1, point(vector.Vec2(points[0][0:2]) +
+                                   direction * offset +
+                                   direction.normal * offset))
 
-        points.append((mid + direction.normal * 0.15 * self.node_radius).vec)
-        points.append((mid - direction.normal * 0.15 * self.node_radius).vec)
+        points.append(point((mid + direction.normal * offset)))
+        points.append(point((mid - direction.normal * offset)))
         points.append(points[3 if is_arc else 1])
 
-        pygame.draw.lines(surface,
-                          color,
-                          False,
-                          points,
-                          3)
+        v = vbo.VBO(numpy.array(points, 'f'))
+        with gl.util.draw_vbo(0, v):
+            GL.glUniform4f(self._loc('flat', 'color'), *color)
+            GL.glDrawArrays(GL.GL_LINE_STRIP, 0, len(points))
 
     def draw_trace(self):
-        def rgb_from_hsv(h, s, v):
+        def rgb_from_hsv(h, s, v, a=None):
             hi = h // 60
             f = (h / 60) - hi
             p = v * (1 - s)
@@ -272,22 +271,23 @@ class Application(_apps.Application):
             else:
                 raise ValueError("h_i out of range")
 
-            return (r * 255, g * 255, b * 255)
+            if a is None:
+                return (r, g, b)
+            else:
+                return (r, g, b, a)
 
-        def color(index, steps):
+        def color(index, steps, alpha=None):
             return rgb_from_hsv((steps - i % 361),
                                 0.75 + index / (4 * steps),
-                                0.75 + index / (4 * steps))
+                                0.75 + index / (4 * steps),
+                                alpha)
 
         count = len(self.trace)
-        trace = pygame.surface.Surface(self.mode,
-                                       flags=pygame.SRCALPHA).convert_alpha()
 
         for i in range(1, count):
             self.draw_arrow(src=self.trace[i - 1],
                             dst=self.trace[i],
-                            surface=trace,
-                            color=color(i, count - 1))
+                            color=color(i, count - 1, alpha=1.0))
 
     def draw_grid(self):
         GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
@@ -449,6 +449,7 @@ class Application(_apps.Application):
                                           location=self._loc('flat',
                                                              'transformation'))
             self.draw_grid()
+            self.draw_trace()            
 
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])

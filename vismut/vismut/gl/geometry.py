@@ -11,8 +11,7 @@ import numpy
 from manganese.math.vector import Vec2
 
 
-def circle(center, radius, subdivisions=3, z=1.5, scale=None):
-    translate = Vec2(center)
+def circle(radius, subdivisions=3, z=1.5, scale=None):
     r = radius * sin(pi / 4)
 
     if scale is not None:
@@ -33,7 +32,7 @@ def circle(center, radius, subdivisions=3, z=1.5, scale=None):
             return
 
         base = -fr + to
-        new = translate - base.normal.normalized * radius
+        new = -base.normal.normalized * radius
 
         if scale is not None:
             new = Vec2(new[0] * scale[0],
@@ -55,8 +54,7 @@ def circle(center, radius, subdivisions=3, z=1.5, scale=None):
     return vertices
 
 
-def label(center, radius, z=0.5, scale=None):
-    translate = Vec2(center)
+def label(radius, z=0.5, scale=None):
     r = radius * sin(pi / 4)
 
     if scale is not None:
@@ -101,4 +99,30 @@ def cage(offset, scale, z=0.5):
             [-1 - 0.5 * xo, 1 + yo, z],
             [-2 - 1.125 * xo, 0.0, z],
             [-1 - 0.5 * xo, -1 - yo, z],
+            ]
+
+
+def chords(major, minor, z=0.45):
+    return [[0.0, 0.0, z] + major,      # 0
+            [1.0, 0.0, z] + major,      # 1
+            [0.0, 1.0, z] + major,      # 2
+            [1.0, 1.0, z] + major,      # 3
+            [2.0, 0.0, z] + major,      # 4
+            [-1.0, 1.0, z] + major,     # 5
+            [-1.0, 0.0, z] + major,     # 6
+            [-1.0, -1.0, z] + major,    # 7
+            [0.0, -1.0, z] + major,     # 8
+            [1.0, -1.0, z] + major,     # 9
+            [0.0, 0.0, z] + minor,      # 10
+            [0.0, 1.0, z] + minor,      # 11
+            [-1.0, 1.0, z] + minor,     # 12
+            [-1.0, 0.0, z] + minor,     # 13
+            [-1.0, -1.0, z] + minor,    # 14
+            [-2.0, 0.0, z] + minor,     # 15
+            [1.0, 0.0, z] + minor,      # 16
+            [1.0, 1.0, z] + minor,      # 17
+            [1.0, -1.0, z] + minor,     # 18
+            [2.0, 0.0, z] + minor,      # 19
+            [2.0, 1.0, z] + minor,      # 20
+            [0.0, -1.0, z] + minor,     # 21
             ]

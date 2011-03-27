@@ -150,58 +150,57 @@ class Application(_apps.Application):
         GL.glUniform3f(self._loc('textured', 'translation'), column, row, 0)
         GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertices['label'])
 
-    def draw_chord(self, nodes, type):
-        ax, ay = self.tn.anchor
-        points = [(ax + x, ay + y, 0.45) for x, y in nodes]
-        chord = vbo.VBO(numpy.array(points, 'f'))
-
-        with gl.util.draw_vbo(0, chord):
-            GL.glUniform4f(self._loc('flat', 'color'),
-                           *self._color('chord', 'bg', type))
-            GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
-            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE)
-            GL.glUniform4f(self._loc('flat', 'color'),
-                           *self._color('screen', 'fg'))
-            GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
-            GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL)
-
     def draw_chords(self, nodes):
         if len(nodes) < 3:
             return
 
+        indices = []
+
         if (0, 0) in nodes:
             if (0, 1) in nodes:
                 if (1, 0) in nodes:
-                    self.draw_chord([(0, 0), (0, 1), (1, 0)], 'major')
+                    indices.extend([0, 1, 2])
                 if (-1, 1) in nodes:
-                    self.draw_chord([(0, 0), (0, 1), (-1, 1)], 'minor')
+                    indices.extend([10, 11, 12])
 
             if (0, -1) in nodes:
                 if (1, -1) in nodes:
-                    self.draw_chord([(0, 0), (0, -1), (1, -1)], 'major')
+                    indices.extend([0, 8, 9])
                 if (-1, 0) in nodes:
-                    self.draw_chord([(0, 0), (0, -1), (-1, 0)], 'minor')
+                    indices.extend([10, 21, 13])
 
             if (-1, 0) in nodes and (-1, 1) in nodes:
-                self.draw_chord([(0, 0), (-1, 0), (-1, 1)], 'major')
+                indices.extend([0, 6, 5])
 
             if (1, 0) in nodes and (1, -1) in nodes:
-                self.draw_chord([(0, 0), (1, 0), (1, -1)], 'minor')
+                indices.extend([10, 16, 18])
 
         if (-1, 0) in nodes and (-1, -1) in nodes:
             if (-2, 0) in nodes:
-                self.draw_chord([(-1, 0), (-1, -1), (-2, 0)], 'minor')
+                indices.extend([13, 14, 15])
             if (0, -1) in nodes:
-                self.draw_chord([(-1, 0), (-1, -1), (0, -1)], 'major')
+                indices.extend([6, 7, 8])
 
         if (1, 1) in nodes:
             if (2, 0) in nodes and (2, 1) in nodes:
-                self.draw_chord([(1, 1), (2, 0), (2, 1)], 'minor')
+                indices.extend([17, 19, 20])
             if (1, 0) in nodes:
                 if (2, 0) in nodes:
-                    self.draw_chord([(1, 1), (1, 0), (2, 0)], 'major')
+                    indices.extend([3, 1, 4])
                 if (0, 1) in nodes:
-                    self.draw_chord([(1, 1), (1, 0), (0, 1)], 'minor')
+                    indices.extend([17, 16, 11])
+
+        loc = self._loc('flat-attrib', 'color')
+        ibo = vbo.VBO(numpy.array(indices, 'uint8'),
+                      target='GL_ELEMENT_ARRAY_BUFFER')
+
+        with gl.util.draw_vbo(0, self.vbos['chords'], stride=28):
+            with gl.util.vertex_attrib_array(loc):
+                GL.glVertexAttribPointer(loc, 4, GL.GL_FLOAT, False,
+                                         28, self.vbos['chords'] + 12)
+                with gl.util.bind(ibo):
+                    GL.glDrawElements(GL.GL_TRIANGLES, len(indices),
+                                      GL.GL_UNSIGNED_BYTE, ibo)
 
     def draw_arrow(self, src, dst, color, z=0.625):
         def point(p):
@@ -290,8 +289,6 @@ class Application(_apps.Application):
                             color=color(i, count - 1, alpha=1.0))
 
     def draw_grid(self):
-        GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
-
         with gl.util.draw_vbo(0, self.vbos['grid']):
             GL.glUniform4f(self._loc('flat', 'color'),
                            *self._color('key', 'bg', 'inactive'))
@@ -317,6 +314,7 @@ class Application(_apps.Application):
 
         self.programs = {'flat': compile('flat'),
                          'textured': compile('textured'),
+                         'flat-attrib': compile('flat-attrib'),
                          }
 
         def uni(prog, name):
@@ -329,6 +327,12 @@ class Application(_apps.Application):
                               'translation': uni('flat', 'translation'),
                               'transformation': uni('flat', 'transformation'),
                               },
+                     'flat-attrib': {'color': att('flat-attrib', 'the_color'),
+                                     'translation': uni('flat-attrib',
+                                                        'translation'),
+                                     'transformation': uni('flat-attrib',
+                                                           'transformation'),
+                                     },
                      'textured': {'texture': uni('textured', 'the_texture'),
                                   'texcoords': att('textured',
                                                    'the_tex_coords'),
@@ -345,9 +349,9 @@ class Application(_apps.Application):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
     def cleanup_gl(self):
-        GL.glDeleteTextures(numpy.array([item for column in self.textures
-                                         for item
-                                         in self.textures[column]],
+        GL.glDeleteTextures(numpy.array([self.textures[column][row]
+                                         for column in self.textures
+                                         for row in self.textures[column]],
                                         'uint32'))
         self.textures = {}
 
@@ -377,14 +381,12 @@ class Application(_apps.Application):
 
         self.node_size = (w, h)
 
-        self._geometry('node', gl.geometry.circle(center=(0, 0),
-                                                  radius=self.node_radius,
+        self._geometry('node', gl.geometry.circle(radius=self.node_radius,
                                                   scale=self.node_size,
                                                   subdivisions=5,
                                                   z=0.5))
 
-        self._geometry('label', gl.geometry.label(center=(0, 0),
-                                                  radius=self.node_radius,
+        self._geometry('label', gl.geometry.label(radius=self.node_radius,
                                                   scale=self.node_size,
                                                   z=0.75))
 
@@ -394,6 +396,13 @@ class Application(_apps.Application):
         self._geometry('grid', gl.geometry.grid(self.tn.left, self.tn.right,
                                                 self.tn.bottom, self.tn.top,
                                                 z=0.125))
+
+        self._geometry('chords',
+                       gl.geometry.chords(z=0.45,
+                                          major=list(self._color('chord', 'bg',
+                                                            'major')),
+                                          minor=list(self._color('chord', 'bg',
+                                                            'minor'))))
 
         self.polys = (self.tn.columns * self.tn.rows *
                       (self.vertices['node'] + self.vertices['label']) +
@@ -444,25 +453,34 @@ class Application(_apps.Application):
         self.tn.set_active(self.ut.keys)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
+        x, y = self.tn.anchor
+
         with gl.util.use_program(self.programs['flat']) as program:
             gl.util.transformation_matrix(program, self.matrix,
                                           location=self._loc('flat',
                                                              'transformation'))
-            self.draw_grid()
-            self.draw_trace()            
-
-            self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
-                              for key in self.ut.keys])
-
-            x, y = self.tn.anchor
-            GL.glUniform3f(self._loc('flat', 'translation'), x, y, 0.0)
-
-            self.draw_cage()
 
             with gl.util.draw_vbo(0, self.vbos['node']):
                 for column in range(self.tn.left, self.tn.right + 1):
                     for row in range(self.tn.bottom, self.tn.top + 1):
                         self.draw_node(column, row)
+
+            GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
+            self.draw_grid()
+            self.draw_trace()
+
+            GL.glUniform3f(self._loc('flat', 'translation'), x, y, 0.0)
+
+            self.draw_cage()
+
+        with gl.util.use_program(self.programs['flat-attrib']) as program:
+            gl.util.transformation_matrix(program, self.matrix,
+                                          location=self._loc('flat-attrib',
+                                                             'transformation'))
+            GL.glUniform3f(self._loc('flat-attrib', 'translation'), x, y, 0.0)
+
+            self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
+                              for key in self.ut.keys])
 
         with gl.util.use_program(self.programs['textured']) as program:
             gl.util.transformation_matrix(program, self.matrix,

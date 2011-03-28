@@ -1,11 +1,11 @@
 #version 120
 #extension GL_all : disable
 
-uniform sampler2D the_texture;
+uniform sampler2D texture;
 
-varying vec2 tex_coords;
+in vec2 the_tex_coords;
 
 void main ()
 {
-  gl_FragColor = texture2D(the_texture, tex_coords);
+  gl_FragColor = texture2D(texture, the_tex_coords);
 }

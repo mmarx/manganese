@@ -1,20 +1,24 @@
 #version 120
 #extension all : disable
 
-attribute vec4 the_color;
+#if (__VERSION__ > 120)
+in vec4 gl_Vertex;
+#endif
+
+in vec4 color;
 
 uniform vec3 translation;
 uniform mat4 transformation;
 
-varying vec4 color;
-
-#if (__VERSION__ > 120)
-in vec4 gl_Vertex;
+#if (__VERSION__ <= 120)
+varying vec4 the_color;
+#else
+out vec4 the_color;
 #endif
 
 void main ()
 {
   gl_Position = transformation * (vec4(translation, 0.0) + gl_Vertex);
 
-  color = the_color;
+  the_color = color;
 } 

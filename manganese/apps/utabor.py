@@ -61,7 +61,9 @@ class Application(_apps.Application):
     trace = [(0, 0),
              ]
 
+    locs = {}
     vbos = {}
+    programs = {}
     textures = {}
     vertices = {}
 
@@ -109,6 +111,26 @@ class Application(_apps.Application):
     def _geometry(self, name, vertices):
         self.vbos[name] = vbo.VBO(numpy.array(vertices, 'f'))
         self.vertices[name] = len(vertices)
+
+    def _program(self, name, program):
+        def compile_shader(type):
+            with open(self.data(gl.shaders.filename(name, type),
+                                app='vismut')) as shader:
+                return gl.shaders.compile_shader(shader.read(), type)
+
+        def locs(type, lookup):
+            if type in program:
+                for loc in program[type]:
+                    self.locs[name][loc] = lookup(self.programs[name], loc)
+
+        vertex = compile_shader(gl.shaders.VERTEX)
+        fragment = compile_shader(gl.shaders.FRAGMENT)
+
+        self.locs[name] = {}
+        self.programs[name] = GL.shaders.compileProgram(vertex, fragment)
+
+        locs('uniforms', GL.glGetUniformLocation)
+        locs('attributes', GL.glGetAttribLocation)
 
     def _make_label(self, column, row):
         label = self._text(self.tn.name(column, row),
@@ -301,47 +323,36 @@ class Application(_apps.Application):
             GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.vertices['cage'])
 
     def init_gl(self):
-        def compile(name):
-            def compile_shader(type):
-                with open(self.data(gl.shaders.filename(name, type),
-                                    app='vismut')) as shader:
-                    return gl.shaders.compile_shader(shader.read(), type)
-
-            vertex = compile_shader(gl.shaders.VERTEX)
-            fragment = compile_shader(gl.shaders.FRAGMENT)
-
-            return GL.shaders.compileProgram(vertex, fragment)
-
-        self.programs = {'flat': compile('flat'),
-                         'textured': compile('textured'),
-                         'flat-attrib': compile('flat-attrib'),
-                         }
-
-        def uni(prog, name):
-            return GL.glGetUniformLocation(self.programs[prog], name)
-
-        def att(prog, name):
-            return GL.glGetAttribLocation(self.programs[prog], name)
-
-        self.locs = {'flat': {'color': uni('flat', 'color'),
-                              'translation': uni('flat', 'translation'),
-                              'transformation': uni('flat', 'transformation'),
+        self.programs = {}
+        programs = {'flat': {'uniforms': ['color',
+                                          'translation',
+                                          'transformation',
+                                          ],
+                             },
+                    'trace': {'uniforms': ['arrows',
+                                           'transformation',
+                                           'color_map',
+                                           ],
+                              'attributes': ['arrow_id',
+                                             ],
                               },
-                     'flat-attrib': {'color': att('flat-attrib', 'the_color'),
-                                     'translation': uni('flat-attrib',
-                                                        'translation'),
-                                     'transformation': uni('flat-attrib',
-                                                           'transformation'),
-                                     },
-                     'textured': {'texture': uni('textured', 'the_texture'),
-                                  'texcoords': att('textured',
-                                                   'the_tex_coords'),
-                                  'translation': uni('textured',
-                                                     'translation'),
-                                  'transformation': uni('textured',
-                                                        'transformation'),
-                                  },
-                     }
+                    'textured': {'uniforms': ['texture',
+                                              'translation',
+                                              'transformation',
+                                              ],
+                                 'attributes': ['tex_coords',
+                                                ],
+                                 },
+                    'flat-attrib': {'uniforms': ['translation',
+                                                 'transformation',
+                                                 ],
+                                    'attributes': ['color',
+                                                   ],
+                                    },
+                    }
+
+        for program in programs:
+            self._program(program, programs[program])
 
         GL.glClearColor(*self._color('screen', 'bg'))
         GL.glEnable(GL.GL_DEPTH_TEST)
@@ -488,7 +499,7 @@ class Application(_apps.Application):
                                                              'transformation'))
             with gl.util.draw_vbo(0, self.vbos['label'], stride=20):
                 GL.glUniform1i(self._loc('textured', 'texture'), 0)
-                loc = self._loc('textured', 'texcoords')
+                loc = self._loc('textured', 'tex_coords')
                 with gl.util.vertex_attrib_array(loc):
                     GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False,
                                              20, self.vbos['label'] + 12)

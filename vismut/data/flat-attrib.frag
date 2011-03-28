@@ -1,9 +1,9 @@
 #version 120
 #extension GL_all : disable
 
-varying vec4 color;
+varying vec4 the_color;
 
 void main ()
 {
-  gl_FragColor = color;
+  gl_FragColor = the_color;
 }

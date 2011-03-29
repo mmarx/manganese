@@ -4,8 +4,6 @@ from __future__ import division
 import sys
 import os.path
 
-from math import ceil, log
-
 import numpy
 import pygame
 
@@ -28,6 +26,7 @@ import manganese.vismut.gl.util
 import manganese.vismut.gl.context
 import manganese.vismut.gl.shaders
 import manganese.vismut.gl.geometry
+import manganese.vismut.gl.textures
 
 import manganese.utabor._utabor as utabor
 import manganese.midi.jack as jack
@@ -58,6 +57,8 @@ class Application(_apps.Application):
     anchor = 60
     grow_count = 0
     node_radius = 0.25
+    traced_up_to = 1
+    trace_vertices = numpy.array([], 'f').reshape(0, 4)
     trace = [(0, 0),
              ]
 
@@ -136,29 +137,7 @@ class Application(_apps.Application):
         label = self._text(self.tn.name(column, row),
                            (0, 0, 0, 255)).convert_alpha()
 
-        size = 2 ** ceil(log(max(label.get_size()), 2))
-        surface = pygame.surface.Surface((size, size),
-                                         flags=pygame.SRCALPHA).convert_alpha()
-        surface.fill((0, 0, 0, 0))
-        surface.blit(label, label.get_rect(center=(size // 2, size // 2)))
-
-        data = pygame.image.tostring(surface, "RGBA", True)
-
-        tex = GL.glGenTextures(1)
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S,
-                           GL.GL_REPEAT)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T,
-                           GL.GL_REPEAT)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER,
-                           GL.GL_LINEAR)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER,
-                           GL.GL_LINEAR)
-        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, size, size,
-                        0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, data)
-
-        return tex
+        return gl.textures.node_label(label)
 
     def draw_node(self, column, row):
         GL.glUniform3f(self._loc('flat', 'translation'), column, row, 0)
@@ -224,9 +203,9 @@ class Application(_apps.Application):
                     GL.glDrawElements(GL.GL_TRIANGLES, len(indices),
                                       GL.GL_UNSIGNED_BYTE, ibo)
 
-    def draw_arrow(self, src, dst, color, z=0.625):
+    def add_arrow(self, src, dst, index, z=0.625):
         def point(p):
-            return [p[0], p[1], z]
+            return [p[0], p[1], z, index]
 
         s = vector.Vec2(src)
         d = vector.Vec2(dst)
@@ -256,59 +235,48 @@ class Application(_apps.Application):
             points.insert(1, point(vector.Vec2(points[1][0:2]) -
                                    direction * offset +
                                    direction.normal * offset))
+            points.insert(1, points[1])
             points.insert(1, point(vector.Vec2(points[0][0:2]) +
                                    direction * offset +
                                    direction.normal * offset))
+            points.insert(1, points[1])
 
+        points.append(points[-1])
         points.append(point((mid + direction.normal * offset)))
+        points.append(points[-1])
         points.append(point((mid - direction.normal * offset)))
-        points.append(points[3 if is_arc else 1])
+        points.append(points[-1])
+        points.append(points[5 if is_arc else 1])
 
-        v = vbo.VBO(numpy.array(points, 'f'))
-        with gl.util.draw_vbo(0, v):
-            GL.glUniform4f(self._loc('flat', 'color'), *color)
-            GL.glDrawArrays(GL.GL_LINE_STRIP, 0, len(points))
+        self.trace_vertices = numpy.append(self.trace_vertices,
+                                           numpy.array(points, 'f'),
+                                           axis=0)
 
     def draw_trace(self):
-        def rgb_from_hsv(h, s, v, a=None):
-            hi = h // 60
-            f = (h / 60) - hi
-            p = v * (1 - s)
-            q = v * (1 - s * f)
-            t = v * (1 - s * (1 - f))
-
-            if hi in [0, 6]:
-                r, g, b = v, t, p
-            elif hi == 1:
-                r, g, b = q, v, p
-            elif hi == 2:
-                r, g, b = p, v, t
-            elif hi == 3:
-                r, g, b = p, q, v
-            elif hi == 4:
-                r, g, b = t, p, v
-            elif hi == 5:
-                r, g, b = v, p, q
-            else:
-                raise ValueError("h_i out of range")
-
-            if a is None:
-                return (r, g, b)
-            else:
-                return (r, g, b, a)
-
-        def color(index, steps, alpha=None):
-            return rgb_from_hsv((steps - i % 361),
-                                0.75 + index / (4 * steps),
-                                0.75 + index / (4 * steps),
-                                alpha)
-
         count = len(self.trace)
 
-        for i in range(1, count):
-            self.draw_arrow(src=self.trace[i - 1],
-                            dst=self.trace[i],
-                            color=color(i, count - 1, alpha=1.0))
+        if count == 1:
+            return
+
+        if count > self.traced_up_to:
+            for i in range(self.traced_up_to, count):
+                self.add_arrow(src=self.trace[i - 1],
+                               dst=self.trace[i],
+                               index=i)
+
+            self.traced_up_to = count
+            self._geometry('trace', self.trace_vertices)
+
+        GL.glBindTexture(GL.GL_TEXTURE_1D, self.trace_map)
+        GL.glUniform1i(self._loc('trace', 'color_map'), 0)
+        GL.glUniform1i(self._loc('trace', 'arrows'), count - 1)
+
+        loc = self._loc('trace', 'arrow_id')
+        with gl.util.draw_vbo(0, self.vbos['trace'], stride=16):
+            with gl.util.vertex_attrib_array(loc):
+                GL.glVertexAttribPointer(loc, 1, GL.GL_FLOAT, False,
+                                         16, self.vbos['trace'] + 12)
+                GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['trace'])
 
     def draw_grid(self):
         with gl.util.draw_vbo(0, self.vbos['grid']):
@@ -333,8 +301,8 @@ class Application(_apps.Application):
                                            'transformation',
                                            'color_map',
                                            ],
-                              'attributes': ['arrow_id',
-                                             ],
+                               'attributes': ['arrow_id',
+                                              ],
                               },
                     'textured': {'uniforms': ['texture',
                                               'translation',
@@ -359,8 +327,11 @@ class Application(_apps.Application):
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
+        self.trace_map = gl.textures.trace_colors(steps=128)
+
     def cleanup_gl(self):
-        GL.glDeleteTextures(numpy.array([self.textures[column][row]
+        GL.glDeleteTextures(numpy.array([self.trace_map] +
+                                        [self.textures[column][row]
                                          for column in self.textures
                                          for row in self.textures[column]],
                                         'uint32'))
@@ -391,6 +362,8 @@ class Application(_apps.Application):
             h /= scale
 
         self.node_size = (w, h)
+
+        self._geometry('trace', [])
 
         self._geometry('node', gl.geometry.circle(radius=self.node_radius,
                                                   scale=self.node_size,
@@ -478,7 +451,6 @@ class Application(_apps.Application):
 
             GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
             self.draw_grid()
-            self.draw_trace()
 
             GL.glUniform3f(self._loc('flat', 'translation'), x, y, 0.0)
 
@@ -492,6 +464,12 @@ class Application(_apps.Application):
 
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])
+
+        with gl.util.use_program(self.programs['trace']) as program:
+            gl.util.transformation_matrix(program, self.matrix,
+                                          location=self._loc('trace',
+                                                             'transformation'))
+            self.draw_trace()
 
         with gl.util.use_program(self.programs['textured']) as program:
             gl.util.transformation_matrix(program, self.matrix,

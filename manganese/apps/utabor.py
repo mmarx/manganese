@@ -191,17 +191,34 @@ class Application(_apps.Application):
                 if (0, 1) in nodes:
                     indices.extend([17, 16, 11])
 
+        if not indices:
+            return
+
+        outline = []
+        for i in range(0, len(indices), 3):
+            outline.extend([indices[i] + 22,
+                            indices[i + 1] + 22,
+                            indices[i + 1] + 22,
+                            indices[i + 2] + 22,
+                            indices[i + 2] + 22,
+                            indices[i] + 22])
+
         loc = self._loc('flat-attrib', 'color')
-        ibo = vbo.VBO(numpy.array(indices, 'uint8'),
+        bg = vbo.VBO(numpy.array(indices, 'uint8'),
                       target='GL_ELEMENT_ARRAY_BUFFER')
+        ol = vbo.VBO(numpy.array(outline, 'uint8'),
+                     target='GL_ELEMENT_ARRAY_BUFFER')
 
         with gl.util.draw_vbo(0, self.vbos['chords'], stride=28):
             with gl.util.vertex_attrib_array(loc):
                 GL.glVertexAttribPointer(loc, 4, GL.GL_FLOAT, False,
                                          28, self.vbos['chords'] + 12)
-                with gl.util.bind(ibo):
+                with gl.util.bind(bg):
                     GL.glDrawElements(GL.GL_TRIANGLES, len(indices),
-                                      GL.GL_UNSIGNED_BYTE, ibo)
+                                      GL.GL_UNSIGNED_BYTE, bg)
+                with gl.util.bind(ol):
+                    GL.glDrawElements(GL.GL_LINES, len(outline),
+                                      GL.GL_UNSIGNED_BYTE, bg)
 
     def add_arrow(self, src, dst, index, z=0.625):
         def point(p):
@@ -378,24 +395,24 @@ class Application(_apps.Application):
                                                   scale=self.node_size,
                                                   z=0.75))
 
+        outline = list(self._color('screen', 'fg'))
         self._geometry('cage',
                        gl.geometry.cage(offset=(0.5, 0.45),
                                         scale=self.node_size, z=0.25,
-                                        outline=list(self._color('screen',
-                                                                 'fg')),
+                                        outline=outline,
                                         background=list(self._color('screen',
                                                                'hl'))))
 
         self._geometry('grid', gl.geometry.grid(self.tn.left, self.tn.right,
                                                 self.tn.bottom, self.tn.top,
                                                 z=0.125))
-
         self._geometry('chords',
                        gl.geometry.chords(z=0.45,
                                           major=list(self._color('chord', 'bg',
                                                             'major')),
                                           minor=list(self._color('chord', 'bg',
-                                                            'minor'))))
+                                                            'minor')),
+                                          outline=outline))
 
         self.polys = (self.tn.columns * self.tn.rows *
                       (self.vertices['node'] + self.vertices['label']) +

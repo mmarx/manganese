@@ -108,8 +108,8 @@ def cage(offset, scale, outline, background, z=0.5, dz=0.001):
             ]
 
 
-def chords(major, minor, z=0.45):
-    return [[0.0, 0.0, z] + major,      # 0
+def chords(major, minor, outline, z=0.45, dz=0.001):
+    vertices = [[0.0, 0.0, z] + major,      # 0
             [1.0, 0.0, z] + major,      # 1
             [0.0, 1.0, z] + major,      # 2
             [1.0, 1.0, z] + major,      # 3
@@ -132,3 +132,8 @@ def chords(major, minor, z=0.45):
             [2.0, 1.0, z] + minor,      # 20
             [0.0, -1.0, z] + minor,     # 21
             ]
+
+    vertices.extend([[vertex[0], vertex[1], vertex[2] + dz] + outline
+                     for vertex in vertices])
+
+    return vertices

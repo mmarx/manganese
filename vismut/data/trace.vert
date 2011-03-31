@@ -5,7 +5,11 @@
 in vec4 gl_Vertex;
 #endif
 
+#if (__VERSION__ <= 120)
+attribute float arrow_id;
+#else
 in float arrow_id;
+#endif
 
 uniform int arrows;
 uniform mat4 transformation;

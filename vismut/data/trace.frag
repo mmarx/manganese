@@ -7,7 +7,11 @@ out vec4 gl_FragColor;
 
 uniform sampler1D color_map;
 
+#if (__VERSION__ <= 120)
+varying float color_index;
+#else
 in float color_index;
+#endif
 
 void main ()
 {

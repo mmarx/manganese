@@ -5,7 +5,11 @@
 in vec4 gl_Vertex;
 #endif
 
+#if (__VERSION__ <= 120)
+attribute vec4 color;
+#else
 in vec4 color;
+#endif
 
 uniform vec3 translation;
 uniform mat4 transformation;

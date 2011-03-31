@@ -5,7 +5,11 @@
 in vec4 gl_Vertex;
 #endif
 
+#if (__VERSION__ <= 120)
+attribute vec2 tex_coords;
+#else
 in vec2 tex_coords;
+#endif
 
 uniform vec3 translation;
 uniform mat4 transformation;

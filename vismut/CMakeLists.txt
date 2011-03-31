@@ -19,19 +19,17 @@
 ######################################################################
 
 
-# find SDL
-
-set(SDL_BUILDING_LIBRARY ON)
-find_package(OpenGL REQUIRED)
-
-include_directories(${OpenGL_INCLUDE_DIR})
+# find FreeType
+find_package(Freetype REQUIRED)
+include_directories(${FREETYPE_INCLUDE_DIRS})
 
 include(PythonExtension)
 
 python_extension(vismut "vismut/" "manganese/" PURE)
 python_extension(gl "vismut/gl/" "manganese/" PURE)
+python_extension(fonts "vismut/gl/fonts" "manganese")
 
-#target_link_libraries(vismut ${OpenGL_gl_LIBRARIES})
+target_link_libraries(fonts ${FREETYPE_LIBRARIES})
 
 file(GLOB VISMUT_DATA data/*.vert data/*.frag)
 install(FILES ${VISMUT_DATA} DESTINATION data/vismut/)

@@ -85,20 +85,26 @@ def grid(left, right, bottom, top, z=0.5):
     return grid
 
 
-def cage(offset, scale, z=0.5):
+def cage(offset, scale, outline, background, z=0.5, dz=0.001):
     xo, yo = offset
     xs, ys = scale
 
     xo *= xs
     yo *= ys
 
-    return [[-1 - 0.5 * xo, -1 - yo, z],
-            [1 + 0.5 * xo, -1 - yo, z],
-            [2 + xo, -0.25 * yo, z],
-            [2 + xo, 1 + yo, z],
-            [-1 - 0.5 * xo, 1 + yo, z],
-            [-2 - 1.125 * xo, 0.0, z],
-            [-1 - 0.5 * xo, -1 - yo, z],
+    return [[-1 - 0.5 * xo, -1 - yo, z] + outline,          # 0
+            [1 + 0.5 * xo, -1 - yo, z] + outline,           # 1
+            [2 + xo, -0.25 * yo, z] + outline,              # 2
+            [2 + xo, 1 + yo, z] + outline,                  # 3
+            [-1 - 0.5 * xo, 1 + yo, z] + outline,           # 4
+            [-2 - 1.125 * xo, 0.0, z] + outline,            # 5
+            [-1 - 0.5 * xo, -1 - yo, z] + outline,          # 6
+            [-2 - 1.125 * xo, 0.0, z - dz] + background,    # 7
+            [-1 - 0.5 * xo, -1 - yo, z - dz] + background,  # 8
+            [-1 - 0.5 * xo, 1 + yo, z - dz] + background,   # 9
+            [1 + 0.5 * xo, -1 - yo, z - dz] + background,   # 10
+            [2 + xo, 1 + yo, z - dz] + background,          # 11
+            [2 + xo, -0.25 * yo, z] + background,           # 12
             ]
 
 

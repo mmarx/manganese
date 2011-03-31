@@ -38,7 +38,7 @@ class Application(_apps.Application):
 
     default_colors = {'screen_bg': (255, 255, 255, 255),
                       'screen_fg': (0, 0, 0, 255),
-                      'screen_hl': (50, 230, 230, 255),
+                      'screen_hl': (50, 230, 230, 128),
                       'key_bg': {'active': (200, 230, 250, 255),
                                  'inactive': (160, 160, 220, 255),
                                  'anchor': (250, 200, 250, 255),
@@ -285,10 +285,14 @@ class Application(_apps.Application):
             GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['grid'])
 
     def draw_cage(self):
-        with gl.util.draw_vbo(0, self.vbos['cage']):
-            GL.glUniform4f(self._loc('flat', 'color'),
-                           *self._color('screen', 'fg'))
-            GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.vertices['cage'])
+        loc = self._loc('flat-attrib', 'color')
+
+        with gl.util.draw_vbo(0, self.vbos['cage'], stride=28):
+            with gl.util.vertex_attrib_array(loc):
+                GL.glVertexAttribPointer(loc, 4, GL.GL_FLOAT, False,
+                                         28, self.vbos['cage'] + 12)
+                GL.glDrawArrays(GL.GL_LINE_STRIP, 0, 7)
+                GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 7, 6)
 
     def init_gl(self):
         self.programs = {}
@@ -374,8 +378,13 @@ class Application(_apps.Application):
                                                   scale=self.node_size,
                                                   z=0.75))
 
-        self._geometry('cage', gl.geometry.cage(offset=(0.5, 0.45),
-                                                scale=self.node_size, z=0.25))
+        self._geometry('cage',
+                       gl.geometry.cage(offset=(0.5, 0.45),
+                                        scale=self.node_size, z=0.25,
+                                        outline=list(self._color('screen',
+                                                                 'fg')),
+                                        background=list(self._color('screen',
+                                                               'hl'))))
 
         self._geometry('grid', gl.geometry.grid(self.tn.left, self.tn.right,
                                                 self.tn.bottom, self.tn.top,
@@ -452,16 +461,13 @@ class Application(_apps.Application):
             GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
             self.draw_grid()
 
-            GL.glUniform3f(self._loc('flat', 'translation'), x, y, 0.0)
-
-            self.draw_cage()
-
         with gl.util.use_program(self.programs['flat-attrib']) as program:
             gl.util.transformation_matrix(program, self.matrix,
                                           location=self._loc('flat-attrib',
                                                              'transformation'))
             GL.glUniform3f(self._loc('flat-attrib', 'translation'), x, y, 0.0)
 
+            self.draw_cage()
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])
 

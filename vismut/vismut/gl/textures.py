@@ -75,7 +75,6 @@ def trace_colors(steps):
                                      flags=pygame.SRCALPHA).convert_alpha()
 
     for x in range(0, steps):
-        print repr(color(x * (360 / steps), alpha=1.0))
         surface.set_at((x, 0), color(x * (360 / steps), alpha=1.0))
 
     data = pygame.image.tostring(surface, "RGBA", True)

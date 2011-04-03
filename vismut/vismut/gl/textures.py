@@ -8,6 +8,8 @@ from OpenGL import GL
 import pygame
 import pygame.image
 
+from manganese.vismut.gl import fonts
+
 
 def node_label(label):
     size = 2 ** ceil(log(max(label.get_size()), 2))
@@ -90,5 +92,28 @@ def trace_colors(steps):
                        GL.GL_LINEAR)
     GL.glTexImage1D(GL.GL_TEXTURE_1D, 0, GL.GL_RGBA, steps,
                     0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, data)
+
+    return tex
+
+
+def font_atlas(file, face, resolution):
+    data = None
+
+    with fonts.freetype() as ft:
+        data = ft.make_font_texture(file, face, resolution)
+
+    tex = GL.glGenTextures(1)
+    GL.glActiveTexture(GL.GL_TEXTURE0)
+    GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+    GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S,
+                       GL.GL_REPEAT)
+    GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T,
+                       GL.GL_REPEAT)
+    GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER,
+                       GL.GL_LINEAR)
+    GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER,
+                       GL.GL_LINEAR)
+    GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGB, resolution,
+                    resolution, 0, GL.GL_LUMINANCE, GL.GL_UNSIGNED_BYTE, data)
 
     return tex

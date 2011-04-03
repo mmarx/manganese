@@ -27,7 +27,7 @@ include(PythonExtension)
 
 python_extension(vismut "vismut/" "manganese/" PURE)
 python_extension(gl "vismut/gl/" "manganese/" PURE)
-python_extension(fonts "vismut/gl/fonts" "manganese")
+python_extension(fonts "vismut/gl/fonts" "manganese/")
 
 target_link_libraries(fonts ${FREETYPE_LIBRARIES})
 

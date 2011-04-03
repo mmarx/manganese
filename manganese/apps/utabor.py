@@ -351,7 +351,7 @@ class Application(_apps.Application):
         self.trace_map = gl.textures.trace_colors(steps=128)
 
     def cleanup_gl(self):
-        GL.glDeleteTextures(numpy.array([self.trace_map] +
+        GL.glDeleteTextures(numpy.array([self.trace_map, self.font_atlas] +
                                         [self.textures[column][row]
                                          for column in self.textures
                                          for row in self.textures[column]],
@@ -525,6 +525,7 @@ class Application(_apps.Application):
                                         size=self.cfg('font_size', 12),
                                         bold=False,
                                         italic=False)
+        self.font_atlas = gl.textures.font_atlas('/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf', 0, 128)
 
         self.resize_net()
 

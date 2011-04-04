@@ -31,5 +31,5 @@ python_extension(fonts "vismut/gl/fonts" "manganese/")
 
 target_link_libraries(fonts ${FREETYPE_LIBRARIES})
 
-file(GLOB VISMUT_DATA data/*.vert data/*.frag)
+file(GLOB VISMUT_DATA data/*.vert data/*.frag data/*.ttf)
 install(FILES ${VISMUT_DATA} DESTINATION data/vismut/)

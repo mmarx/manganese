@@ -525,7 +525,9 @@ class Application(_apps.Application):
                                         size=self.cfg('font_size', 12),
                                         bold=False,
                                         italic=False)
-        self.font_atlas = gl.textures.font_atlas('/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf', 0, 128)
+        self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf',
+                                                           app='vismut'),
+                                                 0, 128)
 
         self.resize_net()
 

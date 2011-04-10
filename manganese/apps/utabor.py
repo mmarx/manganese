@@ -291,9 +291,11 @@ class Application(_apps.Application):
         loc = self._loc('trace', 'arrow_id')
         with gl.util.draw_vbo(0, self.vbos['trace'], stride=16):
             with gl.util.vertex_attrib_array(loc):
+                GL.glLineWidth(4)
                 GL.glVertexAttribPointer(loc, 1, GL.GL_FLOAT, False,
                                          16, self.vbos['trace'] + 12)
                 GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['trace'])
+                GL.glLineWidth(1)
 
     def draw_grid(self):
         with gl.util.draw_vbo(0, self.vbos['grid']):

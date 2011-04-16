@@ -36,24 +36,25 @@ import manganese.math.vector as vector
 
 class Application(_apps.Application):
 
-    default_colors = {'screen_bg': (255, 255, 255, 255),
-                      'screen_fg': (0, 0, 0, 255),
-                      'screen_hl': (50, 230, 230, 128),
-                      'key_bg': {'active': (200, 230, 250, 255),
-                                 'inactive': (160, 160, 220, 255),
-                                 'anchor': (250, 200, 250, 255),
-                                 'anchor_active': (220, 220, 250, 255),
+    default_colors = {'screen_fg': (230, 230, 230, 128),
+                      'screen_bg': (0, 0, 0, 255),
+                      'screen_hl': (230, 230, 230, 128),
+                      'key_bg': {'active': (250, 250, 100, 255),
+                                 'inactive': (210, 210, 160, 0),
+                                 'anchor': (255, 255, 120, 255),
+                                 'anchor_active': (255, 255, 50, 255),
+                                 'anchor_old': (255, 180, 50, 255),
                                  'anchor_initial': (200, 0, 0, 255),
                                  'anchor_initial_active': (255, 0, 0, 255),
                                  },
                       'key_fg': (80, 80, 80, 255),
                       'chord_bg': {'major': (255, 255, 0, 255),
-                                   'minor': (255, 200, 0, 255),
+                                   'minor': (255, 100, 0, 255),
                                    },
                       }
 
     vsync = not True
-    max_fps = 0
+    max_fps = 60
     anchor = 60
     grow_count = 0
     node_radius = 0.25
@@ -94,18 +95,21 @@ class Application(_apps.Application):
         is_anchor = self.tn.is_anchor(x, y)
 
         if self.tn.is_active(x, y):
-            if (x, y) == (0, 0):
-                return 'anchor_initial_active'
+            # if (x, y) == (0, 0):
+            #     return 'anchor_initial_active'
 
             if is_anchor:
                 return 'anchor_active'
             else:
                 return 'active'
-        elif (x, y) == (0, 0):
-            return 'anchor_initial'
+        # elif (x, y) == (0, 0):
+        #     return 'anchor_initial'
 
         if is_anchor:
             return 'anchor'
+
+        if (x, y) in self.trace:
+            return 'anchor_old'
 
         return 'inactive'
 
@@ -291,7 +295,7 @@ class Application(_apps.Application):
         loc = self._loc('trace', 'arrow_id')
         with gl.util.draw_vbo(0, self.vbos['trace'], stride=16):
             with gl.util.vertex_attrib_array(loc):
-                GL.glLineWidth(4)
+                GL.glLineWidth(2)
                 GL.glVertexAttribPointer(loc, 1, GL.GL_FLOAT, False,
                                          16, self.vbos['trace'] + 12)
                 GL.glDrawArrays(GL.GL_LINES, 0, self.vertices['trace'])
@@ -433,7 +437,7 @@ class Application(_apps.Application):
                                              }
 
     def render(self):
-        print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
+        #print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
 
         eventful = False
 
@@ -454,7 +458,7 @@ class Application(_apps.Application):
                 if self.tn.should_grow(min_dist=1):
                     self.grow_count += 1
 
-                    if self.grow_count >= self.max_fps // 10:
+                    if self.grow_count >= 0 * self.max_fps // 10:
                         self.tn.grow(min_dist=1, by=1)
                         self.resize_net()
                         self.grow_count = 0
@@ -478,7 +482,7 @@ class Application(_apps.Application):
                         self.draw_node(column, row)
 
             GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
-            self.draw_grid()
+            #self.draw_grid()
 
         with gl.util.use_program(self.programs['flat-attrib']) as program:
             gl.util.transformation_matrix(program, self.matrix,
@@ -486,7 +490,7 @@ class Application(_apps.Application):
                                                              'transformation'))
             GL.glUniform3f(self._loc('flat-attrib', 'translation'), x, y, 0.0)
 
-            self.draw_cage()
+            #self.draw_cage()
             self.draw_chords([self.tn.pitch_coordinates(key, relative=True)
                               for key in self.ut.keys])
 
@@ -511,7 +515,7 @@ class Application(_apps.Application):
                             self.draw_node_label(column, row)
 
     def run(self):
-        self.tn = net.ToneNet()
+        self.tn = net.ToneNet(left=-22, right=9, bottom=-5, top=11)
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
                                                 max_fps=self.max_fps,

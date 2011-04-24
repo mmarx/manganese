@@ -37,7 +37,7 @@ def node_label(label):
     return tex
 
 
-def trace_colors(steps):
+def trace_colors(steps, last=360, offset=0):
     def rgb_from_hsv(h, s, v, a=None):
         hi = h // 60
         f = (h / 60) - hi
@@ -77,7 +77,7 @@ def trace_colors(steps):
                                      flags=pygame.SRCALPHA).convert_alpha()
 
     for x in range(0, steps):
-        surface.set_at((x, 0), color(x * (360 / steps), alpha=1.0))
+        surface.set_at((x, 0), color(offset + x * (last / steps), alpha=1.0))
 
     data = pygame.image.tostring(surface, "RGBA", True)
 

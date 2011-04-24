@@ -30,6 +30,16 @@ class Application(object):
         self.config = config.load(app=args[0])
         print "Hello, World! (from managenese application framework)"
 
+        for opt in args:
+            print opt
+            if '=' in opt:
+                key, value = opt.split('=')
+
+                while key.startswith('-'):
+                    key = key[1:]
+
+                self.config[key] = value
+
     def prefix(self):
         return sys.path[-1]
 

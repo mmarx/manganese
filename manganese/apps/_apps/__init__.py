@@ -19,6 +19,7 @@
 ######################################################################
 
 import sys
+import os.path
 
 import manganese.config as config
 
@@ -29,8 +30,29 @@ class Application(object):
         self.config = config.load(app=args[0])
         print "Hello, World! (from managenese application framework)"
 
+        for opt in args:
+            print opt
+            if '=' in opt:
+                key, value = opt.split('=')
+
+                while key.startswith('-'):
+                    key = key[1:]
+
+                self.config[key] = value
+
     def prefix(self):
         return sys.path[-1]
+
+    def data_prefix(self, app=None):
+        if app is None:
+            suffix = self.args[0]
+        else:
+            suffix = app
+
+        return os.path.join(self.prefix(), 'data', suffix)
+
+    def data(self, filename, *args, **kwargs):
+        return os.path.join(self.data_prefix(*args, **kwargs), filename)
 
     def cfg(self, key, default):
         if key in self.config:

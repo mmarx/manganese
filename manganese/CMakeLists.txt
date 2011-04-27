@@ -40,6 +40,7 @@ include(PythonExtension)
 python_extension(config "config/" "manganese/" PURE)
 python_extension(apps "apps/" "manganese/" PURE)
 python_extension(_apps "apps/_apps" "manganese/" PURE)
+python_extension(math "math/" "manganese/" PURE)
 python_extension(midi "midi/" "manganese/" PURE)
 python_extension(jack "midi/jack/" "manganese/")
 

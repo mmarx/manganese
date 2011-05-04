@@ -25,9 +25,15 @@ namespace cs
   double scale;
   double base_scale;
   jack_nframes_t last;
+  jack_nframes_t per_callback;
+  jack_nframes_t sample_rate;
   jack_nframes_t base_interval;
 
+  jack_nframes_t window[4];
+  int index;
+
   bool first;
+  bool have_window;
   bool running;
 
   char hh;
@@ -36,6 +42,15 @@ namespace cs
   char fr;
   char sf;
   char lp;
+
+  void
+  set_range (double factor);
+
+  void
+  set_running (bool run);
+
+  void
+  update_speed ();
   
   void
   jump (void* port_buffer,
@@ -144,16 +159,15 @@ namespace cs
   process (jack_nframes_t nframes,
 	   void* arg)
   {
-    if (!running)
-      {
-	return 0;
-      }
-
-    void* port_buffer = jack_port_get_buffer (output_port, nframes);
-    jack_midi_clear_buffer (port_buffer);
-
     void* input_buffer = jack_port_get_buffer (input_port, nframes);
     jack_nframes_t count = jack_midi_get_event_count (input_buffer);
+
+    per_callback = nframes;
+
+    for (int i = 0; i < 4; ++i)
+      {
+	window[i] += sample_rate;
+      }
 
     for (jack_nframes_t i = 0; i < count; ++i)
       {
@@ -162,6 +176,7 @@ namespace cs
 
 	if ((event.buffer[0] & 0xF0) == 0xE0)
 	  {
+	    // pitch bend
 	    short pitch = event.buffer[2];
 	    pitch <<= 7;
 	    pitch |= event.buffer[1];
@@ -169,7 +184,64 @@ namespace cs
 	    pitch -= 8192;
 	    scale = base_scale + range * (pitch / 8192.);
 	  }
+	else if (running && (event.buffer[0] & 0xF0) == 0x90)
+	  {
+	    // note on
+	    ++index;
+
+	    if (!have_window && index >= 4)
+	      {
+		have_window = true;
+	      }
+
+	    index %= 4;
+
+	    window[index] = event.time;
+	    
+	    if (have_window)
+	      {
+		update_speed ();
+	      }
+	  }
+	else if ((event.buffer[0] & 0xF0) == 0xB0)
+	  {
+	    // controller change
+	    char controller = event.buffer[1];
+	    char value = event.buffer[2];
+
+	    if (controller == 1)
+	      {
+		set_range (0.1 + 0.9 * (value / 127.0));
+	      }
+	    else if (value == 127)
+	      {
+		switch (controller)
+		  {
+		  case 116:
+		    set_running (false);
+		    break;
+		  case 117:
+		    set_running (true);
+		    break;
+		  case 114:
+		    index = -1;
+		    first = true;
+		    have_window = false;
+		    break;
+		  default:
+		    break;
+		  }
+	      }
+	  }
       }
+
+    if (!running || !have_window)
+      {
+	return 0;
+      }
+
+    void* port_buffer = jack_port_get_buffer (output_port, nframes);
+    jack_midi_clear_buffer (port_buffer);
     
     if (first)
       {
@@ -251,15 +323,18 @@ namespace cs
 				     0);
 
     last = 0;
+    index = -1;
     first = true;
+    have_window = false;
     
     set_range (range);
     set_speed (speed);
     set_running (false);
 
     jack_activate (client);
-
-    base_interval = jack_get_sample_rate (client) / 120.0;
+    
+    sample_rate = jack_get_sample_rate (client);
+    base_interval = sample_rate / 120.0;
   }
 
   void
@@ -274,6 +349,42 @@ namespace cs
 
 	jack_client_close (client);
       }
+  }
+
+  void
+  update_speed ()
+  {
+    std::cerr << "-!- speed ";
+    
+    for (int i = 0; i < 4; ++i)
+      {
+	std::cerr << window[i] << " ";
+      }
+    std::cerr << std::endl;
+
+    jack_nframes_t interval = 0;
+
+    for (int i = 1; i < index; ++i)
+      {
+	if (window[i] < window[i - 1])
+	  {
+	    int callbacks = 1;
+	    // interval spans at least two process callbacks
+	    if (window[i - 1] > sample_rate)
+	      {
+		// interval spans more than two process callbacks
+		callbacks = window[i - 1] / sample_rate;
+		window[i - 1] %= sample_rate;
+	      }
+	    interval = callbacks * per_callback + window[i - 1] + window[i];
+	  }
+	else
+	  {
+	    interval = window[i] - window[i - 1];
+	  }
+	std::cerr << interval << " ";
+      }
+    std::cerr << std::endl;
   }
 
   BOOST_PYTHON_MODULE (_caesium)

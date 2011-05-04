@@ -20,7 +20,7 @@ namespace cs
 			       0x7F,
 			       0x01,
 			       0x01};
-  
+
   double range;
   double scale;
   double base_scale;
@@ -29,7 +29,10 @@ namespace cs
   jack_nframes_t sample_rate;
   jack_nframes_t base_interval;
 
-  jack_nframes_t window[4];
+  int const window_size = 4;
+  int const target_bpm = 120;
+
+  jack_nframes_t window[window_size];
   int index;
 
   bool first;
@@ -51,7 +54,7 @@ namespace cs
 
   void
   update_speed ();
-  
+
   void
   jump (void* port_buffer,
 	jack_nframes_t frame)
@@ -95,7 +98,7 @@ namespace cs
     jack_midi_data_t* event = jack_midi_event_reserve (port_buffer,
 						       frame,
 						       2);
-    
+
     event[0] = 0xF1;
     event[1] = (lp << 4);
 
@@ -164,7 +167,7 @@ namespace cs
 
     per_callback = nframes;
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < window_size; ++i)
       {
 	window[i] += sample_rate;
       }
@@ -180,7 +183,7 @@ namespace cs
 	    short pitch = event.buffer[2];
 	    pitch <<= 7;
 	    pitch |= event.buffer[1];
-	    
+
 	    pitch -= 8192;
 	    scale = base_scale + range * (pitch / 8192.);
 	  }
@@ -189,15 +192,15 @@ namespace cs
 	    // note on
 	    ++index;
 
-	    if (!have_window && index >= 4)
+	    if (!have_window && index >= window_size)
 	      {
 		have_window = true;
 	      }
 
-	    index %= 4;
+	    index %= window_size;
 
 	    window[index] = event.time;
-	    
+
 	    if (have_window)
 	      {
 		update_speed ();
@@ -242,7 +245,7 @@ namespace cs
 
     void* port_buffer = jack_port_get_buffer (output_port, nframes);
     jack_midi_clear_buffer (port_buffer);
-    
+
     if (first)
       {
 	first = false;
@@ -307,7 +310,7 @@ namespace cs
   create (double speed, double range)
   {
     client = jack_client_open ("caesium", JackNullOption, 0);
-  
+
     jack_set_process_callback (client, process, 0);
 
     output_port = jack_port_register (client,
@@ -326,13 +329,13 @@ namespace cs
     index = -1;
     first = true;
     have_window = false;
-    
+
     set_range (range);
     set_speed (speed);
     set_running (false);
 
     jack_activate (client);
-    
+
     sample_rate = jack_get_sample_rate (client);
     base_interval = sample_rate / 120.0;
   }
@@ -351,40 +354,75 @@ namespace cs
       }
   }
 
+  jack_nframes_t
+  interval (int i)
+  {
+    int prev = (i ? i - 1 : window_size - 1);
+
+    int callbacks_curr = 1;
+    int callbacks_prev = 1;
+
+    jack_nframes_t offset = 0;
+
+    if (window[i] > sample_rate)
+      {
+	callbacks_curr = window[i] / sample_rate;
+	window[i] %= sample_rate;
+      }
+
+    if (window[prev] > sample_rate)
+      {
+	callbacks_prev = window[prev] / sample_rate;
+	window[prev] %= sample_rate;
+      }
+
+    if (callbacks_curr <= callbacks_prev)
+      {
+	offset = (callbacks_prev - callbacks_curr) * per_callback;
+      }
+    else
+      {
+	offset = (callbacks_curr - callbacks_prev) * per_callback;
+      }
+
+    if (window[i] < window[prev])
+      {
+	return offset + window[prev] - window[i];
+      }
+    else
+      {
+	return offset + window[i] - window[prev];
+      }
+  }
+
   void
   update_speed ()
   {
-    std::cerr << "-!- speed ";
-    
-    for (int i = 0; i < 4; ++i)
-      {
-	std::cerr << window[i] << " ";
-      }
-    std::cerr << std::endl;
+    jack_nframes_t acc = 0;
 
-    jack_nframes_t interval = 0;
-
-    for (int i = 1; i < index; ++i)
+    for (int i = index; i < window_size; ++i)
       {
-	if (window[i] < window[i - 1])
-	  {
-	    int callbacks = 1;
-	    // interval spans at least two process callbacks
-	    if (window[i - 1] > sample_rate)
-	      {
-		// interval spans more than two process callbacks
-		callbacks = window[i - 1] / sample_rate;
-		window[i - 1] %= sample_rate;
-	      }
-	    interval = callbacks * per_callback + window[i - 1] + window[i];
-	  }
-	else
-	  {
-	    interval = window[i] - window[i - 1];
-	  }
-	std::cerr << interval << " ";
+	jack_nframes_t ts = interval (i);
+	acc += ts;
       }
-    std::cerr << std::endl;
+
+    for (int i = 0; i < index; ++i)
+      {
+	jack_nframes_t ts = interval (i);
+	acc += ts;
+      }
+
+    double bpm = sample_rate * window_size * 60.0d / acc;
+
+    double rescale = bpm / target_bpm;
+
+    std::cerr << "-#- bpm: "
+	      << bpm
+	      << " rescale: "
+	      << rescale
+	      << std::endl;
+
+    set_speed (rescale);
   }
 
   BOOST_PYTHON_MODULE (_caesium)

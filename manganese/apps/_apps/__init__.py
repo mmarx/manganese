@@ -38,7 +38,10 @@ class Application(object):
                 while key.startswith('-'):
                     key = key[1:]
 
-                self.config[key] = value
+                try:
+                    self.config[key] = eval(value)
+                except:
+                    self.config[key] = value
 
     def prefix(self):
         return sys.path[-1]

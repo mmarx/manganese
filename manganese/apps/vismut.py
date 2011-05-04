@@ -242,13 +242,13 @@ class Application(_apps.Application):
         self.theme.draw()
 
     def run(self):
-        self.tn = net.ToneNet()
+        self.tn = net.ToneNet(**self.cfg('net', {}))
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
                                                 max_fps=self.max_fps,
                                                 vsync=self.vsync)
 
-        mode = self.cfg('mode', '640x480')
+        mode = self.cfg('mode', (640, 480))
         self.context.setup(mode)
         self.aspect = mode[0] / mode[1]
 

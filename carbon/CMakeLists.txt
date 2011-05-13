@@ -18,29 +18,7 @@
 # 02110-1301 USA.
 ######################################################################
 
+include(PythonExtension)
 
-
-project(manganese)
-cmake_minimum_required(VERSION 2.8)
-
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
-
-# find python
-set(CMAKE_PYTHON_VERSIONS 2.6)
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
-
-# find boost
-set(BOOST_MULTITHREADED ON)
-set(BOOST_USE_STATIC_LIBS OFF)
-set(BOOST_ADDITIONAL_VERSIONS "1.42" "1.42.0")
-
-find_package(Boost 1.42.0 REQUIRED COMPONENTS python program_options thread)
-include_directories(${Boost_INCLUDE_DIRS})
-
-add_subdirectory(manganese)
-add_subdirectory(lithium)
-add_subdirectory(caesium)
-add_subdirectory(carbon)
-add_subdirectory(vismut)
-add_subdirectory(utabor)
+python_extension(carbon "carbon/" "manganese/" PURE)
+python_extension(contrib_midi "carbon/midi/" "manganese/" PURE)

@@ -28,10 +28,10 @@ class Application(object):
     def __init__(self, args):
         self.args = args
         self.config = config.load(app=args[0])
-        print "Hello, World! (from managenese application framework)"
+        print >> sys.stderr, \
+              "Hello, World! (from managenese application framework)"
 
         for opt in args:
-            print opt
             if '=' in opt:
                 key, value = opt.split('=')
 

@@ -39,7 +39,8 @@ main (int argc, char** argv)
     }
 
   mn::init_python ();
-  mn::exec_python (string ("print 'Hello, World (from embedded python)!'"));
+  mn::exec_python (string ("import sys; print >> sys.stderr, 'Hello, World "
+			   "(from embedded python)!'"));
   mn::bootstrap (argc, argv);
 
   return 0;

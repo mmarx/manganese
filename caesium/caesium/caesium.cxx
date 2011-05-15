@@ -1,4 +1,6 @@
 
+#include <map>
+#include <vector>
 #include <cstring>
 #include <iostream>
 
@@ -46,6 +48,42 @@ namespace cs
   char sf;
   char lp;
 
+  struct timestamp
+  {
+    timestamp () {}
+    timestamp (char hours, char minutes, char seconds, char frames)
+      : hh (hours), mm (minutes), ss (seconds), fr (frames) {}
+
+    int
+    as_frames () const
+    {
+      return fr + 30 * (ss + 60 * (mm + 60 * hh));
+    }
+
+    bool
+    operator< (timestamp const& rhs)
+    {
+      return as_frames () < rhs.as_frames ();
+    }
+
+    bool
+    operator<= (timestamp const& rhs)
+    {
+      return as_frames () <= rhs.as_frames ();
+    }
+
+    char hh;
+    char mm;
+    char ss;
+    char fr;
+  };
+
+  std::size_t stamp = 0;
+  std::size_t stamp_count = 0;
+
+  std::vector<timestamp> stamps;
+  std::map<std::string, char> controllers;
+
   void
   set_range (double factor);
 
@@ -57,8 +95,17 @@ namespace cs
 
   void
   jump (void* port_buffer,
-	jack_nframes_t frame)
+	jack_nframes_t frame,
+	timestamp const& stamp)
   {
+    hh = stamp.hh;
+    mm = stamp.mm;
+    ss = stamp.ss;
+    fr = stamp.fr;
+
+    lp = 0;
+    sf = -1;
+
     jack_midi_data_t* event = jack_midi_event_reserve (port_buffer,
 						       frame,
 						       10);
@@ -68,6 +115,8 @@ namespace cs
     event[7] = ss;
     event[8] = fr;
     event[9] = 0xF7;
+
+    std::cerr << "-@- now at stamp " << cs::stamp << std::endl;
   }
 
   void
@@ -94,6 +143,15 @@ namespace cs
 	      }
 	  }
       }
+
+    timestamp now = timestamp(hh, mm, ss, fr);
+
+    while ((stamp < stamp_count - 1) && (stamps[stamp] <= now))
+      {
+	++stamp;
+      }
+
+    std::cerr << "-:- now at stamp " << stamp << std::endl;
 
     jack_midi_data_t* event = jack_midi_event_reserve (port_buffer,
 						       frame,
@@ -172,6 +230,9 @@ namespace cs
 	window[i] += sample_rate;
       }
 
+    void* port_buffer = jack_port_get_buffer (output_port, nframes);
+    jack_midi_clear_buffer (port_buffer);
+
     for (jack_nframes_t i = 0; i < count; ++i)
       {
 	jack_midi_event_t event;
@@ -212,27 +273,45 @@ namespace cs
 	    char controller = event.buffer[1];
 	    char value = event.buffer[2];
 
-	    if (controller == 1)
+	    if (controller == controllers["range"])
 	      {
 		set_range (0.1 + 0.9 * (value / 127.0));
 	      }
 	    else if (value == 127)
 	      {
-		switch (controller)
+		if (controller == controllers["stop"])
 		  {
-		  case 116:
 		    set_running (false);
-		    break;
-		  case 117:
+		  }
+		else if (controller == controllers["start"])
+		  {
 		    set_running (true);
-		    break;
-		  case 114:
+		  }
+		else if (controller == controllers["reset"])
+		  {
 		    index = -1;
 		    first = true;
 		    have_window = false;
-		    break;
-		  default:
-		    break;
+		  }
+		else if (controller == controllers["next"])
+		  {
+		    if (stamp < stamp_count - 1)
+		      {
+			jump (port_buffer, 0, stamps[++stamp]);
+		      }
+		  }
+		else if (controller = controllers["prev"])
+		  {
+		    if (stamp > 1)
+		      {
+			stamp -= 2;
+		      }
+		    else if (stamp > 0)
+		      {
+			--stamp;
+		      }
+
+		    jump (port_buffer, 0, stamps[stamp]);
 		  }
 	      }
 	  }
@@ -243,17 +322,11 @@ namespace cs
 	return 0;
       }
 
-    void* port_buffer = jack_port_get_buffer (output_port, nframes);
-    jack_midi_clear_buffer (port_buffer);
-
     if (first)
       {
 	first = false;
-
-	hh = mm = ss = fr = lp = 0;
-	sf = -1;
-
-	jump (port_buffer, 0);
+	stamp = 0;
+	jump (port_buffer, 0, timestamp (0, 0, 0, 0));
       }
 
     jack_nframes_t interval = base_interval / scale;
@@ -307,7 +380,7 @@ namespace cs
   }
 
   void
-  create (double speed, double range)
+  create (double speed, double range, py::list markers,  py::dict controls)
   {
     client = jack_client_open ("caesium", JackNullOption, 0);
 
@@ -338,6 +411,53 @@ namespace cs
 
     sample_rate = jack_get_sample_rate (client);
     base_interval = sample_rate / 120.0;
+
+    py::ssize_t n = py::len (markers);
+
+    stamps.resize (n);
+
+    for (py::ssize_t i = 0; i < n; ++i)
+      {
+	py::object obj = markers[i];
+	py::dict stamp = py::extract<py::dict> (obj);
+
+	stamps[i] = timestamp(py::extract<unsigned long> (stamp["hours"]),
+			      py::extract<unsigned long> (stamp["minutes"]),
+			      py::extract<unsigned long> (stamp["seconds"]),
+			      py::extract<unsigned long> (stamp["frames"]));
+
+	++stamp_count;
+      }
+
+    unsigned int i = 0;
+
+    for (std::vector<timestamp>::iterator it = stamps.begin ();
+	 it != stamps.end ();
+	 ++it, ++i)
+      {
+	std::cout << "-#- marker " << i << ": "
+		  << static_cast<unsigned long> (it->hh) << " "
+		  << static_cast<unsigned long> (it->mm) << " "
+		  << static_cast<unsigned long> (it->ss) << " "
+		  << static_cast<unsigned long> (it->fr)
+		  << std::endl;
+      }
+
+    py::list keys = controls.keys ();
+    n = py::len (keys);
+
+    for (py::ssize_t i = 0; i < n; ++i)
+      {
+	py::object key = keys[i];
+	std::string k = py::extract<std::string> (key);
+	char c = py::extract<unsigned long> (controls[key]);
+
+	controllers[k] = c;
+
+	std::cout << "-#- controller: " << k
+		  << ": " << static_cast<unsigned long> (c)
+		  << std::endl;
+      }
   }
 
   void

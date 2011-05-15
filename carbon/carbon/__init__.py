@@ -22,8 +22,8 @@ class CarbonOutStream(MidiOutStream):
     def stamp(self, time):
         seconds = time / 4.0 / self.division
         hh = int(seconds // 3600)
-        mm = int(seconds // 60)
-        ss = int(seconds // 1)
+        mm = int(seconds // 60) % 3600
+        ss = int(seconds // 1) % 60
         fr = int(30 * (seconds - ss))
 
         return {'hours': hh,

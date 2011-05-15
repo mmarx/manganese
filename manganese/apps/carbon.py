@@ -11,7 +11,7 @@ from manganese.carbon import markers
 class Application(_apps.Application):
 
     def mark(self, marker):
-        print marker, ', \t#', self.count
+        print '\t', marker, ', \t#', self.count
         self.count += 1
 
     def run(self):
@@ -30,6 +30,6 @@ class Application(_apps.Application):
 
         self.count = 0
 
-        print 'markers = ['
+        print "markers['%(name)s']" % args, '= ['
         markers(**args)
         print ']'

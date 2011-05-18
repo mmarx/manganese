@@ -13,6 +13,10 @@ namespace cs
 {
   namespace py = boost::python;
 
+  int const mark_channel = 0;
+  int const time_channel = 1;
+  int const mark_offset = 21;
+
   jack_client_t* client;
   jack_port_t* input_port;
   jack_port_t* output_port;
@@ -102,6 +106,13 @@ namespace cs
     mm = stamp.mm;
     ss = stamp.ss;
     fr = stamp.fr;
+
+    std::cerr << "jumping: "
+	      << static_cast<unsigned int> (hh) << " "
+	      << static_cast<unsigned int> (mm) << " "
+	      << static_cast<unsigned int> (ss) << " "
+	      << static_cast<unsigned int> (fr)
+	      << std::endl;
 
     lp = 0;
     sf = -1;
@@ -251,20 +262,36 @@ namespace cs
 	else if (running && (event.buffer[0] & 0xF0) == 0x90)
 	  {
 	    // note on
-	    ++index;
 
-	    if (!have_window && index >= window_size)
+	    int channel = event.buffer[0] & 0x0F;
+
+	    if (channel == mark_channel)
 	      {
-		have_window = true;
+		size_t target = event.buffer[1] - mark_offset;
+
+		if ((target >= 0) && (target < stamp_count))
+		  {
+		    stamp = event.buffer[1] - mark_offset;
+		    jump (port_buffer, 0, stamps[stamp]);
+		  }
 	      }
-
-	    index %= window_size;
-
-	    window[index] = event.time;
-
-	    if (have_window)
+	    else if (channel == time_channel)
 	      {
-		update_speed ();
+		++index;
+
+		if (!have_window && index >= window_size)
+		  {
+		    have_window = true;
+		  }
+
+		index %= window_size;
+
+		window[index] = event.time;
+
+		if (have_window)
+		  {
+		    update_speed ();
+		  }
 	      }
 	  }
 	else if ((event.buffer[0] & 0xF0) == 0xB0)
@@ -277,7 +304,7 @@ namespace cs
 	      {
 		set_range (0.1 + 0.9 * (value / 127.0));
 	      }
-	    else if (value == 127)
+	    else
 	      {
 		if (controller == controllers["stop"])
 		  {

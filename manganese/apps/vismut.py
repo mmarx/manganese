@@ -9,11 +9,11 @@ import pygame
 
 import OpenGL
 
-OpenGL.ERROR_CHECKING = True
-OpenGL.ERROR_LOGGING = True
+OpenGL.ERROR_CHECKING = not True
+OpenGL.ERROR_LOGGING = not True
 OpenGL.FULL_LOGGING = False
-OpenGL.ERROR_ON_COPY = True
-OpenGL.FORWARD_COMPATIBLE_ONLY = True
+OpenGL.ERROR_ON_COPY = not True
+OpenGL.FORWARD_COMPATIBLE_ONLY = not True
 
 from OpenGL import GL
 from OpenGL.arrays import vbo
@@ -38,8 +38,8 @@ class Application(_apps.Application):
     def _color(self, *args, **kwargs):
         return self.theme.color(*args, **kwargs)
 
-    vsync = not True
-    max_fps = 0
+    vsync = not not True
+    max_fps = 60
     anchor = 60
     grow_count = 0
     node_radius = 0.25
@@ -213,7 +213,7 @@ class Application(_apps.Application):
                                              }
 
     def render(self):
-        print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
+        #print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
 
         eventful = False
 
@@ -232,12 +232,8 @@ class Application(_apps.Application):
                             self.trace.append(self.tn.anchor)
 
                 if self.tn.should_grow(min_dist=1):
-                    self.grow_count += 1
-
-                    if self.grow_count >= self.max_fps // 10:
-                        self.tn.grow(min_dist=1, by=1)
-                        self.resize_net()
-                        self.grow_count = 0
+                    self.tn.grow(min_dist=1, by=1)
+                    self.resize_net()
 
         self.theme.draw()
 

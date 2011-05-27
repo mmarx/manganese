@@ -18,43 +18,7 @@
 # 02110-1301 USA.
 ######################################################################
 
+include(PythonExtension)
 
-from _video import *
-
-
-def list_video_modes():
-    from operator import attrgetter
-    return sorted(_video.list_video_modes(), key=attrgetter('size'))
-
-
-def _rect_from_string(cls, string):
-    width, rest = string.split('x', 1)
-
-    if '+' in rest:
-        height, rest = rest.split('+', 1)
-
-        if '+' in rest:
-            x, y = rest.split('+', 1)
-        else:
-            x = rest
-            y = 0
-    else:
-        height = rest
-        x = 0
-        y = 0
-
-    rect = SDLRect()
-    rect.w = int(width)
-    rect.h = int(height)
-    rect.x = int(x)
-    rect.y = int(y)
-
-    return rect
-
-
-def _rect_eq(self, other):
-    return (self.h == other.h and self.w == other.w
-            and self.x == other.x and self.y == other.y)
-
-SDLRect.from_string = classmethod(_rect_from_string)
-SDLRect.__eq__ = _rect_eq
+python_extension(carbon "carbon/" "manganese/" PURE)
+python_extension(contrib_midi "carbon/midi/" "manganese/" PURE)

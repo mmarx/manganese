@@ -40,5 +40,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 add_subdirectory(manganese)
 add_subdirectory(lithium)
+add_subdirectory(caesium)
+add_subdirectory(carbon)
 add_subdirectory(vismut)
 add_subdirectory(utabor)

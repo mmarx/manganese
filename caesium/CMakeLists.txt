@@ -18,34 +18,10 @@
 # 02110-1301 USA.
 ######################################################################
 
+find_package(Jack)
 
-from contextlib import contextmanager
+include(PythonExtension)
 
-import _jack
-from event import Event
+python_extension(caesium "caesium/" "manganese/")
 
-
-@contextmanager
-def create_client(**kwargs):
-    client = _jack.create_client()
-    try:
-        yield client
-    finally:
-        _jack.destroy_client(client)
-
-
-_get_next_event = _jack.JackClient.next_event
-
-
-def _next_event(self):
-    return Event(_get_next_event(self))
-
-
-_jack.JackClient.next_event = _next_event
-
-
-def _frame(self, frame):
-    pass
-
-
-_jack.JackClient.frame = _frame
+target_link_libraries(caesium ${JACK_LIBRARIES})

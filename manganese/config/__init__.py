@@ -19,8 +19,9 @@
 ######################################################################
 
 
+from os import walk
 from sys import stderr
-from os.path import expanduser
+from os.path import expanduser, join
 
 
 # Where to look for config files.
@@ -31,15 +32,20 @@ from os.path import expanduser
 _search_path = ['~/.manganeserc',
                 '~/.manganese/manganeserc',
                 '~/.manganese/%(app)src',
+                '~/.manganese/%(app)s.d/',
                 ]
 
 
-def _try_load(file):
+def _try_load(file, context=None):
     """Try to load file as a config file
 
     This executes the file and uses the locals keys for the config.
     """
-    config = dict()
+    if context is None:
+        config = dict()
+    else:
+        config = context
+
     try:
         execfile(file, dict(), config)
     except IOError:
@@ -59,6 +65,13 @@ def load(app):
     config = dict()
 
     for path in _search_path:
-        config.update(_try_load(expanduser(path) % {'app': app}))
+        expanded = expanduser(path) % {'app': app}
+        if path[-1:] == '/':
+            for root, dirs, files in walk(expanded, topdown=True):
+                del dirs[:]
+                for file in files:
+                    config.update(_try_load(join(root, file), context=config))
+        else:
+            config.update(_try_load(expanded, context=config))
 
     return config

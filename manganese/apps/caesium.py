@@ -13,14 +13,19 @@ class Application(_apps.Application):
     def run(self):
         markers = self.cfg('markers', {})
 
-        if 'mache' not in markers:
+        the_markers = self.cfg('use-markers', 'mache')
+
+        offset = self.cfg('offset', 21)
+        offset = int(offset)
+
+        if the_markers not in markers:
             print "-#- couldn't load any markers"
             the_markers = []
-        else:
-            the_markers = markers['mache']
+        else: the_markers = markers[the_markers]
 
         try:
             with caesium(markers=the_markers,
+                         offset=offset,
                          controls=self.cfg('controls', {})):
                 while True:
                     pass

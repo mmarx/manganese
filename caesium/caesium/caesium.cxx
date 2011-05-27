@@ -15,7 +15,8 @@ namespace cs
 
   int const mark_channel = 0;
   int const time_channel = 1;
-  int const mark_offset = 21;
+  //int const mark_offset = 21;
+  int mark_offset = 21;
 
   jack_client_t* client;
   jack_port_t* input_port;
@@ -107,12 +108,14 @@ namespace cs
     ss = stamp.ss;
     fr = stamp.fr;
 
+#if 0
     std::cerr << "jumping: "
 	      << static_cast<unsigned int> (hh) << " "
 	      << static_cast<unsigned int> (mm) << " "
 	      << static_cast<unsigned int> (ss) << " "
 	      << static_cast<unsigned int> (fr)
 	      << std::endl;
+#endif
 
     lp = 0;
     sf = -1;
@@ -127,7 +130,9 @@ namespace cs
     event[8] = fr;
     event[9] = 0xF7;
 
+#if 0
     std::cerr << "-@- now at stamp " << cs::stamp << std::endl;
+#endif
   }
 
   void
@@ -162,7 +167,9 @@ namespace cs
 	++stamp;
       }
 
+#if 0
     std::cerr << "-:- now at stamp " << stamp << std::endl;
+#endif
 
     jack_midi_data_t* event = jack_midi_event_reserve (port_buffer,
 						       frame,
@@ -349,6 +356,8 @@ namespace cs
 	return 0;
       }
 
+    //std::cerr << "-!-" << std::endl;
+
     if (first)
       {
 	first = false;
@@ -407,8 +416,10 @@ namespace cs
   }
 
   void
-  create (double speed, double range, py::list markers,  py::dict controls)
+  create (double speed, double range, int offset, py::list markers,  py::dict controls)
   {
+    mark_offset = offset;
+
     client = jack_client_open ("caesium", JackNullOption, 0);
 
     jack_set_process_callback (client, process, 0);

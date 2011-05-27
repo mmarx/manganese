@@ -39,12 +39,12 @@ class Caesium(object):
 
 
 @contextmanager
-def caesium(speed=1.0, range=0.25, markers=[], controls={}):
+def caesium(speed=1.0, range=0.25, offset=21, markers=[], controls={}):
     for controller in ['range', 'stop', 'start', 'reset', 'next', 'prev']:
         if controller not in controls:
             controls[controller] = 0
 
-    _caesium.create_caesium(speed, range, markers, controls)
+    _caesium.create_caesium(speed, range, offset, markers, controls)
 
     yield Caesium(speed, range)
 

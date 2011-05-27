@@ -26,7 +26,7 @@ from event import Event
 
 
 @contextmanager
-def create_client():
+def create_client(**kwargs):
     client = _jack.create_client()
     try:
         yield client
@@ -42,3 +42,10 @@ def _next_event(self):
 
 
 _jack.JackClient.next_event = _next_event
+
+
+def _frame(self, frame):
+    pass
+
+
+_jack.JackClient.frame = _frame

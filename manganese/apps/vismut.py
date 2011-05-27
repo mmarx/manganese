@@ -6,6 +6,7 @@ import os.path
 
 import numpy
 import pygame
+import pygame.image
 
 import OpenGL
 
@@ -31,6 +32,7 @@ import manganese.vismut.gl.textures
 
 import manganese.utabor._utabor as utabor
 import manganese.midi.jack as jack
+import manganese.midi.jack.dummy
 import manganese.utabor.centered_net as net
 
 
@@ -39,7 +41,7 @@ class Application(_apps.Application):
         return self.theme.color(*args, **kwargs)
 
     vsync = not not True
-    max_fps = 60
+    max_fps = 30
     anchor = 60
     grow_count = 0
     node_radius = 0.25
@@ -47,6 +49,8 @@ class Application(_apps.Application):
     trace_vertices = numpy.array([], 'f').reshape(0, 4)
     trace = [(0, 0),
              ]
+
+    frame = -1
 
     locs = {}
     vbos = {}
@@ -214,13 +218,27 @@ class Application(_apps.Application):
 
     def render(self):
         #print '-!- fps:', self.context.clock.get_fps(), 'polys: ', self.polys
+        if self.action != 'write-replay' or self.frame >= 0:
+            self.frame += 1
+            self.client.frame(self.frame)
 
         eventful = False
 
         while self.client.have_events:
+            if not eventful and self.action == 'write-replay':
+                if self.frame < 0:
+                    self.frame = 0
+                    self.client.frame(self.frame)
+                    print >> self.replay_file, "events = {0: [",
+                else:
+                    print >> self.replay_file, "          %d: [" % self.frame,
+            eventful = True
             event = self.client.next_event()
 
             if len(event.raw) <= 4:
+                if self.action == 'write-replay':
+                    print >> self.replay_file, ("%s, " % event.raw), 
+                    
                 self.ut.handle_midi(event.as_dword())
 
                 if self.ut.anchor_changed:
@@ -235,9 +253,52 @@ class Application(_apps.Application):
                     self.tn.grow(min_dist=1, by=1)
                     self.resize_net()
 
+        if eventful and self.action == 'write-replay':
+            print >> self.replay_file, "],"
+
         self.theme.draw()
 
+        if self.action == 'dump-frames':
+            # dump frame here
+            frame = GL.glReadPixels(0,
+                                    0,
+                                    self.mode[0],
+                                    self.mode[1],
+                                    GL.GL_RGBA,
+                                    GL.GL_UNSIGNED_BYTE)
+
+            surface = pygame.image.fromstring(frame, self.mode, "RGBA", True)
+            pygame.image.save(surface,
+                              os.path.join(self.dump_prefix,
+                                           '%d.tga' % self.frame))            
+            if self.frame >= self.client.last_frame():
+                self.context.quit_handler(None)
+
     def run(self):
+        self.action = self.cfg('action', 'live')
+
+        replay_file = self.cfg('replay-file', None)
+
+        if self.action in ['replay', 'write-replay', 'dump-frames']:
+            if replay_file:
+                replay_file = os.path.expanduser(replay_file)
+                if self.action == 'write-replay':
+                    self.replay_file = open(replay_file, 'w')
+                else:
+                    self.replay_file = replay_file
+            else:
+                print "-!-", "Need a replay-file."
+                sys.exit(1)
+
+            if self.action == 'dump-frames':
+                dump_prefix = self.cfg('dump-prefix', None)
+
+                if not dump_prefix:
+                    print "-!-", "Need a dump-prefix."
+                    sys.exit(1)
+                else:
+                    self.dump_prefix = os.path.expanduser(dump_prefix)
+        
         self.tn = net.ToneNet(**self.cfg('net', {}))
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
@@ -245,6 +306,7 @@ class Application(_apps.Application):
                                                 vsync=self.vsync)
 
         mode = self.cfg('mode', (640, 480))
+        self.mode = mode
         self.context.setup(mode)
         self.aspect = mode[0] / mode[1]
 
@@ -269,12 +331,28 @@ class Application(_apps.Application):
 
         self.context.add_handler(pygame.VIDEORESIZE, self.resize_event)
 
-        with jack.create_client() as jack_client:
+        if self.action not in ['replay', 'dump-frames']:
+            client_factory = jack.create_client
+        else:
+            events = dict()
+            execfile(self.replay_file, dict(), events)
+            
+            if 'events' not in events:
+                print "-!-", "Invalid replay file."
+                sys.exit(1)
+                
+            client_factory = jack.dummy.create_client(**events)
+
+        with client_factory() as jack_client:
             self.client = jack_client
 
             self.context.run()
 
         self.cleanup_gl()
+
+        if self.action == 'write-replay':
+            print >> self.replay_file, "}"
+            self.replay_file.close()
 
         utabor.destroy_uTabor()
         sys.exit()

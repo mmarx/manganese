@@ -291,6 +291,7 @@ class Application(_apps.Application):
                 sys.exit(1)
 
             if self.action == 'dump-frames':
+                self.max_fps = 0
                 dump_prefix = self.cfg('dump-prefix', None)
 
                 if not dump_prefix:

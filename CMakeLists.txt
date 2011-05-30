@@ -33,7 +33,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 # find boost
 set(BOOST_MULTITHREADED ON)
 set(BOOST_USE_STATIC_LIBS OFF)
-set(BOOST_ADDITIONAL_VERSIONS "1.42" "1.42.0")
+set(BOOST_ADDITIONAL_VERSIONS "1.42" "1.42.0" "1.46" "1.46.1")
 
 find_package(Boost 1.42.0 REQUIRED COMPONENTS python program_options thread)
 include_directories(${Boost_INCLUDE_DIRS})

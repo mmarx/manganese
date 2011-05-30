@@ -1,0 +1,21 @@
+Bauen kann man den Kram folgendermassen:
+cd build
+cmake ..
+ccmake .
+<CMAKE_INSTALL_PREFIX setzen, etwa auf …/build/install>
+make install
+
+Starten ist dann einfach:
+./mng vismut
+
+Abhaengigkeiten (ich hoffe, ich habe jetzt keine vergessen):
+ - python-dev (2.5 <= x < 3)
+ - boost (1.42 ist auf jeden Fall aktuell genug, ansonsten ungetestet)
+ - boost-python
+ - jack (nur mit jack2 getestet)
+ - pygame (1.8 geht)
+ - pyOpenGL (>= 3.0)
+ - SDL (1.2, pygame braucht das)
+
+Unter MacPorts sind folgende Pakete zu installieren
+ - boost +python27 (oder ähnliches)

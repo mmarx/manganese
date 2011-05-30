@@ -36,6 +36,7 @@ function(python_extension extension_NAME extension_PREFIX install_PREFIX)
   if(impure)
     add_library(${extension_NAME} MODULE ${${extension_NAME}_SOURCES})
     target_link_libraries(${extension_NAME} ${Boost_PYTHON_LIBRARY})
+    target_link_libraries(${extension_NAME} ${PYTHON_LIBRARIES})
     set_target_properties(${extension_NAME} PROPERTIES PREFIX "_")
 
     # install it

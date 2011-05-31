@@ -15,7 +15,6 @@ namespace cs
 
   int const mark_channel = 0;
   int const time_channel = 1;
-  //int const mark_offset = 21;
   int mark_offset = 21;
 
   jack_client_t* client;
@@ -30,6 +29,7 @@ namespace cs
 
   double range;
   double scale;
+  double factor;
   double base_scale;
   jack_nframes_t last;
   jack_nframes_t per_callback;
@@ -44,6 +44,7 @@ namespace cs
 
   bool first;
   bool have_window;
+  bool advancing;
   bool running;
 
   char hh;
@@ -56,8 +57,8 @@ namespace cs
   struct timestamp
   {
     timestamp () {}
-    timestamp (char hours, char minutes, char seconds, char frames)
-      : hh (hours), mm (minutes), ss (seconds), fr (frames) {}
+    timestamp (char hours, char minutes, char seconds, char frames, bool stop = false)
+      : hh (hours), mm (minutes), ss (seconds), fr (frames), halt (stop) {}
 
     int
     as_frames () const
@@ -81,6 +82,7 @@ namespace cs
     char mm;
     char ss;
     char fr;
+    bool halt;
   };
 
   std::size_t stamp = 0;
@@ -94,6 +96,9 @@ namespace cs
 
   void
   set_running (bool run);
+
+  void
+  set_speed (double speed);
 
   void
   update_speed ();
@@ -130,6 +135,8 @@ namespace cs
     event[8] = fr;
     event[9] = 0xF7;
 
+    advancing = true;
+
 #if 0
     std::cerr << "-@- now at stamp " << cs::stamp << std::endl;
 #endif
@@ -164,6 +171,7 @@ namespace cs
 
     while ((stamp < stamp_count - 1) && (stamps[stamp] <= now))
       {
+	advancing = !stamps[stamp].halt; // hammerzeit
 	++stamp;
       }
 
@@ -285,8 +293,14 @@ namespace cs
 	    else if (channel == time_channel)
 	      {
 		++index;
+		advancing = true;
 
-		if (!have_window && index >= window_size)
+		if (event.buffer[1] == controllers["rebase"])
+		  {
+		    have_window = false;
+		    set_speed (1.0);
+		  }
+		else if (!have_window && index >= window_size)
 		  {
 		    have_window = true;
 		  }
@@ -351,12 +365,10 @@ namespace cs
 	  }
       }
 
-    if (!running || !have_window)
+    if (!running || !advancing)
       {
 	return 0;
       }
-
-    //std::cerr << "-!-" << std::endl;
 
     if (first)
       {
@@ -416,8 +428,10 @@ namespace cs
   }
 
   void
-  create (double speed, double range, int offset, py::list markers,  py::dict controls)
+  create (double speed, double range, double factor_, int offset,
+	  py::list markers,  py::dict controls)
   {
+    factor = factor_;
     mark_offset = offset;
 
     client = jack_client_open ("caesium", JackNullOption, 0);
@@ -439,6 +453,7 @@ namespace cs
     last = 0;
     index = -1;
     first = true;
+    advancing = false;
     have_window = false;
 
     set_range (range);
@@ -459,10 +474,17 @@ namespace cs
 	py::object obj = markers[i];
 	py::dict stamp = py::extract<py::dict> (obj);
 
+	bool halt = false;
+	if (stamp.has_key ("stop"))
+	  {
+	    halt = py::extract<bool> (stamp["stop"]);
+	  }
+
 	stamps[i] = timestamp(py::extract<unsigned long> (stamp["hours"]),
 			      py::extract<unsigned long> (stamp["minutes"]),
 			      py::extract<unsigned long> (stamp["seconds"]),
-			      py::extract<unsigned long> (stamp["frames"]));
+			      py::extract<unsigned long> (stamp["frames"]),
+			      halt);
 
 	++stamp_count;
       }
@@ -570,7 +592,7 @@ namespace cs
 	acc += ts;
       }
 
-    double bpm = sample_rate * window_size * 60.0d / acc;
+    double bpm = factor * sample_rate * window_size * 60.0d / acc;
 
     double rescale = bpm / target_bpm;
 
@@ -578,6 +600,7 @@ namespace cs
 	      << bpm
 	      << " rescale: "
 	      << rescale
+	      << " factor: " << factor
 	      << std::endl;
 
     set_speed (rescale);

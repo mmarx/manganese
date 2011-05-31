@@ -26,6 +26,7 @@ class Application(_apps.Application):
         try:
             with caesium(markers=the_markers,
                          offset=offset,
+                         factor=float(self.cfg('factor', 1)),
                          controls=self.cfg('controls', {})):
                 while True:
                     pass

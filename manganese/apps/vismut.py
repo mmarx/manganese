@@ -270,7 +270,7 @@ class Application(_apps.Application):
             surface = pygame.image.fromstring(frame, self.mode, "RGBA", True)
             pygame.image.save(surface,
                               os.path.join(self.dump_prefix,
-                                           '%d.tga' % self.frame))            
+                                           '%06d.tga' % self.frame))            
             if self.frame >= self.client.last_frame():
                 self.context.quit_handler(None)
 

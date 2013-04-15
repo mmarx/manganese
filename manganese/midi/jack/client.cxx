@@ -1,17 +1,17 @@
 /***********************************************************************
  * manganese - midi analysis & visualization platform
  * Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
  * the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -93,6 +93,45 @@ namespace mn
     while (event.continued_);
 
     return the_event;
+  }
+
+  bool
+  JackClient::is_connected_to (std::string port)
+  {
+    return jack_port_connected_to (in_port_, port.c_str());
+  }
+
+  int
+  JackClient::connect_to (std::string port)
+  {
+    return jack_connect (client_,
+                         jack_port_name (in_port_),
+                         port.c_str());
+  }
+
+  void
+  JackClient::port_registration_callback (py::object callback)
+  {
+    port_registration_callback_ = callback;
+  }
+
+  py::list
+  JackClient::ports ()
+  {
+    py::list ret;
+
+    boost::shared_ptr<char const*>  ps
+      =  shared_jack_ptr (jack_get_ports (client_,
+                                          NULL,
+                                          JACK_DEFAULT_MIDI_TYPE,
+                                          JackPortIsOutput));
+
+    for (char const** port = ps.get(); port; ++port)
+      {
+        ret.append (std::string (*port));
+      }
+
+    return ret;
   }
 
   int

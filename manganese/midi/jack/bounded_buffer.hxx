@@ -1,6 +1,6 @@
-/*********************************************************************
+/***********************************************************************
  * manganese - midi analysis & visualization platform
- * Copyright (c) 2010, 2011 Maximilian Marx <mmarx@wh2.tu-dresden.de>
+ * Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -16,7 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301 USA.
- ********************************************************************/
+ **********************************************************************/
+
 
 
 #ifndef MANGANESE_MIDI_JACK_BOUNDED_BUFFER_HXX

@@ -44,13 +44,15 @@ namespace mn
     using namespace boost::python;
 
     def ("create_client",
-	 create_client,
-	 return_value_policy<manage_new_object> ());
+         create_client,
+         return_value_policy<manage_new_object> ());
     def ("destroy_client",
-	 destroy_client);
+         destroy_client);
     class_<JackClient> ("JackClient")
       .def_readonly ("have_events", &JackClient::have_events)
+      .def_readonly ("have_ports", &JackClient::have_ports)
       .def ("next_event", &JackClient::next_event)
+      .def ("next_port", &JackClient::next_port)
       .def ("is_connected_to", &JackClient::is_connected_to)
       .def ("connect_to", &JackClient::connect_to)
       .def ("ports", &JackClient::ports);

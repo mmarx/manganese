@@ -29,27 +29,41 @@ namespace mn
 {
   int
   process (jack_nframes_t nframes,
-	   void* arg)
+           void* arg)
   {
     return static_cast<JackClient*> (arg)->process (nframes);
   }
 
+  void
+  port_registration (jack_port_id_t port,
+                     int registering,
+                     void* arg)
+  {
+    static_cast<JackClient*> (arg)->port_registration_callback (port,
+                                                                registering);
+  }
+
   JackClient::JackClient ()
-    : client_ (0), in_port_ (0),
-      in_queue_ (new inbounded_buffer<midi_event> (2048))
+    : client_ (0),
+      in_port_ (0),
+      in_queue_ (new inbounded_buffer<midi_event> (2048)),
+      port_queue_ (new inbounded_buffer<py::str> (2048))
   {
     jack_status_t status;
     client_ = jack_client_open ("manganese",
-				JackNullOption,
-				&status);
+                                JackNullOption,
+                                &status);
 
     in_port_ = jack_port_register (client_,
-				   "midi in",
-				   JACK_DEFAULT_MIDI_TYPE,
-				   JackPortIsInput | JackPortIsTerminal,
-				   0);
+                                   "midi in",
+                                   JACK_DEFAULT_MIDI_TYPE,
+                                   JackPortIsInput | JackPortIsTerminal,
+                                   0);
 
     jack_set_process_callback (client_, ::mn::process, this);
+    jack_set_port_registration_callback (client_,
+                                         ::mn::port_registration,
+                                         this);
 
     jack_activate (client_);
   }
@@ -58,12 +72,12 @@ namespace mn
   {
     if (client_)
       {
-	if (in_port_)
-	  {
-	    jack_port_unregister (client_, in_port_);
-	  }
+        if (in_port_)
+          {
+            jack_port_unregister (client_, in_port_);
+          }
 
-	jack_client_close (client_);
+        jack_client_close (client_);
       }
   }
 
@@ -76,19 +90,19 @@ namespace mn
   py::object
   JackClient::next_event ()
   {
-    py::list the_event = py::list();
+    py::list the_event = py::list ();
     midi_event event;
 
     int j = 0;
 
     do
       {
-	in_queue_->pop_back (&event);
+        in_queue_->pop_back (&event);
 
-	for (size_t i = 0; i < event.size_; ++i)
-	  {
-	    the_event.append (event.data_[i]);
-	  }
+        for (size_t i = 0; i < event.size_; ++i)
+          {
+            the_event.append (event.data_[i]);
+          }
       }
     while (event.continued_);
 
@@ -109,12 +123,6 @@ namespace mn
                          port.c_str());
   }
 
-  void
-  JackClient::port_registration_callback (py::object callback)
-  {
-    port_registration_callback_ = callback;
-  }
-
   py::list
   JackClient::ports ()
   {
@@ -126,12 +134,45 @@ namespace mn
                                           JACK_DEFAULT_MIDI_TYPE,
                                           JackPortIsOutput));
 
-    for (char const** port = ps.get(); port; ++port)
+    for (char const** port = ps.get(); *port; ++port)
       {
         ret.append (std::string (*port));
       }
 
     return ret;
+  }
+
+  bool
+  JackClient::have_ports ()
+  {
+    return port_queue_->is_not_empty ();
+  }
+
+  py::str
+  JackClient::next_port ()
+  {
+    py::str port;
+    port_queue_->pop_back (&port);
+
+    return port;
+  }
+
+  void
+  JackClient::port_registration_callback (jack_port_id_t port,
+                                          int registering)
+  {
+    if (registering)
+      {
+        jack_port_t* the_port = jack_port_by_id (client_, port);
+        std::string type (jack_port_type (the_port));
+
+        if (type == JACK_DEFAULT_MIDI_TYPE)
+          {
+            py::str name (jack_port_name (the_port));
+
+            port_queue_->push_front (name);
+          }
+      }
   }
 
   int
@@ -142,34 +183,34 @@ namespace mn
 
     if (count)
       {
-	for (jack_nframes_t i = 0; i < count; ++i)
-	  {
-	    jack_midi_event_t event;
-	    jack_midi_event_get (&event, port_buffer, i);
+        for (jack_nframes_t i = 0; i < count; ++i)
+          {
+            jack_midi_event_t event;
+            jack_midi_event_get (&event, port_buffer, i);
 
-	    size_t size = event.size;
+            size_t size = event.size;
 
-	    if (size <= 3)
-	      {
-		// single-message event
-		in_queue_->push_front (midi_event (event.buffer, size));
-	      }
-	    else
-	      {
-		// split it up
-		in_queue_->push_front (midi_event (event.buffer, 3, true));
+            if (size <= 3)
+              {
+                // single-message event
+                in_queue_->push_front (midi_event (event.buffer, size));
+              }
+            else
+              {
+                // split it up
+                in_queue_->push_front (midi_event (event.buffer, 3, true));
 
-		size_t i = 3;
-		for (; i < (size - 3); i += 3)
-		  {
-		    in_queue_->push_front (midi_event ((event.buffer + i),
-						       3, true, true));
-		  }
+                size_t i = 3;
+                for (; i < (size - 3); i += 3)
+                  {
+                    in_queue_->push_front (midi_event ((event.buffer + i),
+                                                       3, true, true));
+                  }
 
-		in_queue_->push_front (midi_event ((event.buffer + i),
-						   (size - i), false, true));
-	      }
-	  }
+                in_queue_->push_front (midi_event ((event.buffer + i),
+                                                   (size - i), false, true));
+              }
+          }
       }
 
     return 0;

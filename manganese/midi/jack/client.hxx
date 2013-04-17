@@ -44,6 +44,10 @@ namespace mn
     JackClient ();
     ~JackClient ();
 
+    void
+    port_registration_callback (jack_port_id_t port,
+                                int register);
+
     int
     process (jack_nframes_t nframes);
 
@@ -59,8 +63,11 @@ namespace mn
     int
     connect_to (std::string port);
 
-    void
-    port_registration_callback (py::object callback);
+    bool
+    have_ports ();
+
+    py::str
+    next_port ();
 
     py::list
     ports ();
@@ -68,9 +75,9 @@ namespace mn
   private:
     jack_client_t* client_;
     jack_port_t* in_port_;
-    py::object port_registration_callback_;
 
     boost::shared_ptr<inbounded_buffer<midi_event> > in_queue_;
+    boost::shared_ptr<inbounded_buffer<py::str> > port_queue_;
   };
 }
 

@@ -19,6 +19,8 @@
 ########################################################################
 
 
+import errno
+from exceptions import OSError
 from contextlib import contextmanager
 
 import _jack
@@ -43,6 +45,21 @@ def _next_event(self):
 
 
 _jack.JackClient.next_event = _next_event
+_connect_to = _jack.JackClient.connect_to
+
+
+def _connect(self, port):
+    result = _connect_to (self, port)
+
+    if result == 0:             # everything went fine
+        return
+    if result == errno.EEXIST:  # silently pass if already connected
+        return
+
+    raise OSError(result)
+
+
+_jack.JackClient.connect_to = _connect
 
 
 def _frame(self, frame):

@@ -119,8 +119,8 @@ namespace mn
   JackClient::connect_to (std::string port)
   {
     return jack_connect (client_,
-                         jack_port_name (in_port_),
-                         port.c_str());
+                         port.c_str(),
+                         jack_port_name (in_port_));
   }
 
   py::list

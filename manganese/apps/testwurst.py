@@ -29,14 +29,14 @@ import manganese.midi.jack
 class Application(_apps.Application):
 
     def run(self):
-        with midi.jack.create_client() as client:
+        auto = self.cfg('connect', [])
+        with midi.jack.create_client(autoconnect = auto) as client:
             for port in client.ports():
                 print repr(port)
 
             while True:
-                if client.have_ports:
-                    port = client.next_port()
-                    print repr(port)
+                client.check_auto_connect()
+
                 if client.have_events:
                     event = client.next_event()
                     print event, ": ", repr(event)

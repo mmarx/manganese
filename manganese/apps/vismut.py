@@ -243,12 +243,7 @@ class Application(_apps.Application):
 
         eventful = False
 
-        if self.autoconnect is not None:
-            while self.client.have_ports:
-                port = self.client.next_port()
-                if port == self.autoconnect:
-                    if not self.client.is_connected_to(port):
-                        self.client.connect_to(port)
+        self.client.check_auto_connect()
 
         while self.client.have_events:
             if not eventful and self.action == 'write-replay':
@@ -360,8 +355,8 @@ class Application(_apps.Application):
         self.autoconnect = None
 
         if self.action not in ['replay', 'dump-frames']:
-            client_factory = jack.create_client
-            self.autoconnect = self.cfg('connect', None)
+            auto = self.cfg('connect', [])
+            client_factory = lambda: jack.create_client(autoconnect = auto)
         else:
             events = dict()
             execfile(self.replay_file, dict(), events)
@@ -374,13 +369,6 @@ class Application(_apps.Application):
 
         with client_factory() as jack_client:
             self.client = jack_client
-
-            if self.autoconnect is not None:
-                for port in self.client.ports():
-                    if port == self.autoconnect:
-                        if not self.client.is_connected_to(port):
-                            self.client.connect_to(port)
-
             self.context.run()
 
         self.cleanup_gl()

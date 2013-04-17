@@ -28,8 +28,14 @@ from event import Event
 
 
 @contextmanager
-def create_client(**kwargs):
+def create_client(autoconnect = [], **kwargs):
     client = _jack.create_client()
+
+    client.autoconnect = autoconnect
+
+    for port in client.ports():
+        if port in client.autoconnect:
+            client.connect_to (port)
 
     try:
         yield client
@@ -66,3 +72,13 @@ def _frame(self, frame):
     pass
 
 _jack.JackClient.frame = _frame
+
+
+def _check_auto_connect(self):
+    while self.have_ports:
+        port = self.next_port()
+        if port in self.autoconnect:
+            self.connect_to(port)
+
+
+_jack.JackClient.check_auto_connect = _check_auto_connect

@@ -92,8 +92,7 @@ class Application(_apps.Application):
 
     def _program(self, name, program):
         def compile_shader(type):
-            with open(self.data(gl.shaders.filename(name, type),
-                                app='vismut')) as shader:
+            with open(self.data(gl.shaders.filename(name, type))) as shader:
                 return gl.shaders.compile_shader(shader.read(), type)
 
         def locs(type, lookup):
@@ -337,8 +336,7 @@ class Application(_apps.Application):
                                         size=self.cfg('font_size', 12),
                                         bold=False,
                                         italic=False)
-        self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf',
-                                                           app='vismut'),
+        self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf'),
                                                  0, 128)
 
         self.ut = utabor.get_uTabor()

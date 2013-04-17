@@ -1,17 +1,17 @@
 ########################################################################
 # manganese - midi analysis & visualization platform
 # Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -243,6 +243,13 @@ class Application(_apps.Application):
 
         eventful = False
 
+        if self.autoconnect is not None:
+            while self.client.have_ports:
+                port = self.client.next_port()
+                if port == self.autoconnect:
+                    if not self.client.is_connected_to(port):
+                        self.client.connect_to(port)
+
         while self.client.have_events:
             if not eventful and self.action == 'write-replay':
                 if self.frame < 0:
@@ -256,8 +263,8 @@ class Application(_apps.Application):
 
             if len(event.raw) <= 4:
                 if self.action == 'write-replay':
-                    print >> self.replay_file, ("%s, " % event.raw), 
-                    
+                    print >> self.replay_file, ("%s, " % event.raw),
+
                 self.ut.handle_midi(event.as_dword())
 
                 if self.ut.anchor_changed:
@@ -289,7 +296,7 @@ class Application(_apps.Application):
             surface = pygame.image.fromstring(frame, self.mode, "RGBA", True)
             pygame.image.save(surface,
                               os.path.join(self.dump_prefix,
-                                           '%06d.tga' % self.frame))            
+                                           '%06d.tga' % self.frame))
             if self.frame >= self.client.last_frame():
                 self.context.quit_handler(None)
 
@@ -318,7 +325,7 @@ class Application(_apps.Application):
                     sys.exit(1)
                 else:
                     self.dump_prefix = os.path.expanduser(dump_prefix)
-        
+
         self.tn = net.ToneNet(**self.cfg('net', {}))
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
@@ -350,21 +357,29 @@ class Application(_apps.Application):
         self.init_gl()
 
         self.context.add_handler(pygame.VIDEORESIZE, self.resize_event)
+        self.autoconnect = None
 
         if self.action not in ['replay', 'dump-frames']:
             client_factory = jack.create_client
+            self.autoconnect = self.cfg('connect', None)
         else:
             events = dict()
             execfile(self.replay_file, dict(), events)
-            
+
             if 'events' not in events:
                 print "-!-", "Invalid replay file."
                 sys.exit(1)
-                
+
             client_factory = jack.dummy.create_client(**events)
 
         with client_factory() as jack_client:
             self.client = jack_client
+
+            if self.autoconnect is not None:
+                for port in self.client.ports():
+                    if port == self.autoconnect:
+                        if not self.client.is_connected_to(port):
+                            self.client.connect_to(port)
 
             self.context.run()
 

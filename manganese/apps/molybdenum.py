@@ -37,31 +37,63 @@ from OpenGL.arrays import vbo
 
 import _apps
 
+from manganese.vismut import gl
+from manganese.vismut import themes
+from manganese.utabor import centered_net
+
+import manganese.vismut.gl.util
+import manganese.vismut.gl.context
+import manganese.vismut.gl.shaders
+import manganese.vismut.gl.geometry
+import manganese.vismut.gl.textures
 import manganese.midi as midi
 import manganese.midi.jack
 
+import vismut
 
-class Application(_apps.Application):
+
+class Net(centered_net.ToneNet):
+    pass
+
+class Application(vismut.Application):
     max_fps = 60
-
-    def setup(self):
-        pass
+    data_suffix = 'vismut'
 
     def render(self):
-        pass
+        super(Application, self).render
 
     def run(self):
+        self.action = 'live'
         self.context = gl.context.OpenGLContext(renderer=self.render,
-                                                max_fps=self.max_fps)
-        self.context.setup(self.cfg('mode', '640x480'))
-        self.setup()
+                                                max_fps=self.max_fps,
+                                                vsync=self.vsync)
+        mode = self.cfg('mode', (640, 480))
+        self.context.setup(mode)
+        self.aspect = mode[0] / mode[1]
+
+        self.font = pygame.font.SysFont(name=self.cfg('font',
+                                                      'bitstreamverasans'),
+                                        size=self.cfg('font_size', 12),
+                                        bold=False,
+                                        italic=False)
+        self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf'),
+                                                 0, 128)
+        self.theme = themes.get(self.cfg('theme', 'default'), self)
+        self.tn = Net(left=-3, right=2, top=3, bottom=-2)
+        self.resize_net()
+
+        self.init_gl()
+
+        self.context.add_handler(pygame.VIDEORESIZE, self.resize_event)
 
         self.context.run()
+
+        self.cleanup_gl()
 
         return
 
         auto = self.cfg('connect', [])
-        with midi.jack.create_client(autoconnect = auto) as client:
+        with midi.jack.create_client(autoconnect = au) as client:
 
             while True:
                 client.check_auto_connect()

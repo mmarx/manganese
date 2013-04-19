@@ -55,7 +55,16 @@ import vismut
 
 
 class MoebiusNet(centered_net.ToneNet):
-    pass
+    def name(self, x, y):
+        base = x + 4 * y
+
+        while base < -1:
+            base += 7
+
+        while base > 5:
+            base -= 7
+
+        return self._name(base, 0)
 
 
 class MoebiusUT(object):
@@ -85,6 +94,11 @@ class Application(vismut.Application):
     max_fps = 60
     data_suffix = 'vismut'
     action = 'live'
+    default_net = {'left': -14,
+                   'right': 0,
+                   'top': 6,
+                   'bottom': 0,
+               }
 
     def render(self):
         super(Application, self).render()
@@ -107,7 +121,8 @@ class Application(vismut.Application):
         self.theme = themes.get(self.cfg('theme', 'default'), self)
         self.classifier = getattr(manganese.midi.pitch,
                                   'Naming' + self.cfg('naming', 'DE'))()
-        self.tn = MoebiusNet(classifier=self.classifier, **self.cfg('net', {}))
+        self.tn = MoebiusNet(classifier=self.classifier,
+                             **self.cfg('net', self.default_net))
         self.resize_net()
         self.ut = MoebiusUT()
 

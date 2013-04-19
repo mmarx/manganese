@@ -1,17 +1,17 @@
 ########################################################################
 # manganese - midi analysis & visualization platform
 # Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -58,3 +58,12 @@ class Event(object):
 
     def __repr__(self):
         return ('[' + ', '.join([hex(byte) for byte in self.raw]) + ']')
+
+
+def event_from_dword(dword):
+    event = hex(dword)[2:]
+    if len(event) % 2:
+        event = '0' + event
+    bytes = [int(event[i:(i + 2)], base=16) for i in range(0, len(event), 2)]
+    bytes.reverse()
+    return Event(bytes)

@@ -49,21 +49,47 @@ import manganese.vismut.gl.textures
 import manganese.midi as midi
 import manganese.midi.jack
 
+from manganese.midi.jack.event import event_from_dword
+
 import vismut
 
 
-class Net(centered_net.ToneNet):
+class MoebiusNet(centered_net.ToneNet):
     pass
+
+
+class MoebiusUT(object):
+    anchor_changed = False
+    anchor = 60
+    keys = []
+    pitch_filter = [0, 2, 4, 5, 7, 9, 11]
+
+    def handle_midi(self, dword):
+        event = event_from_dword(dword)
+        type = event.describe_type()
+
+        if type in ['note on', 'note off']:
+            pitch = event.raw[1]
+            if pitch % 12 in self.pitch_filter:
+                if type == 'note on':
+                    self.keys.append(pitch)
+                else:
+                    try:
+                        self.keys.remove(pitch)
+                    except ValueError:
+                        print ('-!- trying to remove pitch %0xd, but it '
+                               'is already gone' % pitch)
+
 
 class Application(vismut.Application):
     max_fps = 60
     data_suffix = 'vismut'
+    action = 'live'
 
     def render(self):
-        super(Application, self).render
+        super(Application, self).render()
 
     def run(self):
-        self.action = 'live'
         self.context = gl.context.OpenGLContext(renderer=self.render,
                                                 max_fps=self.max_fps,
                                                 vsync=self.vsync)
@@ -79,25 +105,19 @@ class Application(vismut.Application):
         self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf'),
                                                  0, 128)
         self.theme = themes.get(self.cfg('theme', 'default'), self)
-        self.tn = Net(left=-3, right=2, top=3, bottom=-2)
+        self.classifier = getattr(manganese.midi.pitch,
+                                  'Naming' + self.cfg('naming', 'DE'))()
+        self.tn = MoebiusNet(classifier=self.classifier, **self.cfg('net', {}))
         self.resize_net()
+        self.ut = MoebiusUT()
 
         self.init_gl()
 
         self.context.add_handler(pygame.VIDEORESIZE, self.resize_event)
 
-        self.context.run()
+        auto = self.cfg('connect', [])
+        with midi.jack.create_client(autoconnect = auto) as client:
+            self.client = client
+            self.context.run()
 
         self.cleanup_gl()
-
-        return
-
-        auto = self.cfg('connect', [])
-        with midi.jack.create_client(autoconnect = au) as client:
-
-            while True:
-                client.check_auto_connect()
-
-                if client.have_events:
-                    event = client.next_event()
-                    print event, ": ", repr(event)

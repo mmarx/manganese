@@ -66,6 +66,13 @@ class MoebiusNet(centered_net.ToneNet):
 
         return self._name(base, 0)
 
+    def should_grow(self, *args, **kwargs):
+        ax, ay = self.anchor
+
+        return min(ax - self.left,
+                   self.right - ax,
+                   self.top - ay,
+                   ay - self.bottom) < 0
 
 class MoebiusUT(object):
     anchor_changed = False
@@ -119,6 +126,7 @@ class Application(vismut.Application):
         self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf'),
                                                  0, 128)
         self.theme = themes.get(self.cfg('theme', 'default'), self)
+        self.theme.draw_cage = lambda: None
         self.classifier = getattr(manganese.midi.pitch,
                                   'Naming' + self.cfg('naming', 'DE'))()
         self.tn = MoebiusNet(classifier=self.classifier,

@@ -52,6 +52,7 @@ import manganese.vismut.gl.textures
 import manganese.utabor._utabor as utabor
 import manganese.midi.jack as jack
 import manganese.midi.jack.dummy
+import manganese.midi.pitch
 import manganese.utabor.centered_net as net
 
 
@@ -320,7 +321,9 @@ class Application(_apps.Application):
                 else:
                     self.dump_prefix = os.path.expanduser(dump_prefix)
 
-        self.tn = net.ToneNet(**self.cfg('net', {}))
+        self.classifier = getattr(manganese.midi.pitch,
+                                  'Naming' + self.cfg('naming', 'DE'))()
+        self.tn = net.ToneNet(self.classifier, **self.cfg('net', {}))
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
                                                 max_fps=self.max_fps,

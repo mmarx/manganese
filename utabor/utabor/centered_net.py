@@ -1,22 +1,26 @@
 ########################################################################
 # manganese - midi analysis & visualization platform
 # Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301 USA.
 ########################################################################
+
+
+from manganese.midi import pitch
+
 
 class ToneNet(object):
     coords = {0: (0, 0),
@@ -33,37 +37,22 @@ class ToneNet(object):
               11: (1, 1),
               }
 
-    def __init__(self, left=-3, right=3, bottom=-2, top=2, anchor=(0, 0)):
+    def __init__(self, left=-3, right=3,
+                 bottom=-2, top=2,
+                 anchor=(0, 0),
+                 classifier=pitch.NamingDE()):
         self.left = left
         self.right = right
         self.bottom = bottom
         self.top = top
         self.anchor = anchor
         self.set_active([])
+        self.classifier = classifier
 
     def _name(self, base, adjust):
-        default_policy = lambda c: abs(c) * ('es' if (c < 0) else 'is')
-        basenames = {-1: 'f',
-                     0: 'c',
-                     1: 'g',
-                     2: 'd',
-                     3: 'a',
-                     4: 'e',
-                     5: 'h',
-                     }
-
-        policies = {3: (lambda c: (abs(c) * 'as' if (c < 0)
-                                  else 'a' + c * 'is')),
-                    4: (lambda c: (abs(c) * 'es' if (c < 0)
-                                  else 'e' + c * 'is')),
-                    5: (lambda c: ('b' if (c == -1)
-                                  else 'h' + default_policy(c))),
-                    }
-
-        if base in policies:
-            return policies[base](adjust)
-        else:
-            return basenames[base] + default_policy(adjust)
+        return self.classifier.name(pitch=base * 7 % 12,
+                                    augment=(adjust >= 0),
+                                    adjust=adjust)
 
     def name(self, x, y):
         base = x + 4 * y

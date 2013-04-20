@@ -55,6 +55,15 @@ import vismut
 
 
 class MoebiusNet(centered_net.ToneNet):
+    coords = {0: (0, 0),        # C
+              2: (2, 4),        # D
+              4: (4, 1),        # E
+              5: (6, 5),        # F
+              7: (1, 2),        # G
+              9: (3, 6),        # A
+              11: (5, 3),       # B
+          }
+
     def name(self, x, y):
         base = x + 4 * y
 
@@ -69,16 +78,53 @@ class MoebiusNet(centered_net.ToneNet):
     def should_grow(self, *args, **kwargs):
         ax, ay = self.anchor
 
-        return min(ax - self.left,
-                   self.right - ax,
-                   self.top - ay,
-                   ay - self.bottom) < 0
+        return min(ax - self.left - 1,
+                   self.right - ax) < 0
+
+    def grow(self, min_dist=0, by=2):
+        ax, ay = self.anchor
+
+        dist = ax - 1 - self.left
+        if dist < min_dist:
+            self.left -= max(by, min_dist - dist)
+
+        dist = self.right - ax
+        if dist < min_dist:
+            self.right += max(by, min_dist - dist)
+
+    def pitch_coordinates(self, pitch, *args, **kwargs):
+        ax, ay = self.anchor
+        dx, dy = self.coords[pitch % 12]
+
+        return [(ax - 1, (dy - (2 * (ax - 1))) % 7),
+                (ax, (dy - (2 * ax)) % 7),
+            ]
+
+    def move(self, pitch):
+        ax, ay = self.anchor
+        dx, dy = self.coords[pitch % 12]
+
+        self.anchor = (ax % 7 - dx % 7, ay)
+
+    def set_active(self, keys):
+        self.active = []
+        for key in keys:
+            self.active.extend(self.pitch_coordinates(key))
+
 
 class MoebiusUT(object):
-    anchor_changed = False
     anchor = 60
+    last_anchor = 60
     keys = []
     pitch_filter = [0, 2, 4, 5, 7, 9, 11]
+    patterns = {0: [0, 4, 7],
+                2: [2, 5, 9],
+                4: [4, 7, 11],
+                5: [0, 5, 9],
+                7: [2, 7, 11],
+                9: [0, 4, 9],
+                11: [2, 5, 11],
+            }
 
     def handle_midi(self, dword):
         event = event_from_dword(dword)
@@ -95,6 +141,30 @@ class MoebiusUT(object):
                     except ValueError:
                         print ('-!- trying to remove pitch %0xd, but it '
                                'is already gone' % pitch)
+
+        self.keys = list(set(self.keys))
+
+        fst = lambda p: p[0]
+        pitches = [(key % 12, key) for key in self.keys]
+        pitches.sort(key=fst)
+
+        if len(pitches) < 3:
+            return
+
+        for idx in range(0, len(pitches)):
+            for pattern in self.patterns:
+                chord = [fst(pitch) for pitch in pitches[idx:(idx + 3)]]
+                if  chord == self.patterns[pattern]:
+                    anchor = pitches[idx][1]
+                    if anchor != self.anchor:
+                        self.last_anchor = self.anchor
+                        self.anchor = anchor
+                        print self.anchor, self.last_anchor
+                    return
+
+    @property
+    def anchor_changed(self):
+        return self.anchor != self.last_anchor
 
 
 class Application(vismut.Application):

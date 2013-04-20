@@ -125,6 +125,14 @@ class MoebiusUT(object):
                 9: [0, 4, 9],
                 11: [2, 5, 11],
             }
+    anchor_idx = {0: 0,
+                  2: 0,
+                  4: 0,
+                  5: 1,
+                  7: 1,
+                  9: 2,
+                  11: 2,
+                  }
 
     def handle_midi(self, dword):
         event = event_from_dword(dword)
@@ -142,10 +150,8 @@ class MoebiusUT(object):
                         print ('-!- trying to remove pitch %0xd, but it '
                                'is already gone' % pitch)
 
-        self.keys = list(set(self.keys))
-
         fst = lambda p: p[0]
-        pitches = [(key % 12, key) for key in self.keys]
+        pitches = [(key % 12, key) for key in set(self.keys)]
         pitches.sort(key=fst)
 
         if len(pitches) < 3:
@@ -155,7 +161,7 @@ class MoebiusUT(object):
             for pattern in self.patterns:
                 chord = [fst(pitch) for pitch in pitches[idx:(idx + 3)]]
                 if  chord == self.patterns[pattern]:
-                    anchor = pitches[idx][1]
+                    anchor = chord[self.anchor_idx[pattern]]
                     if anchor != self.anchor:
                         self.last_anchor = self.anchor
                         self.anchor = anchor

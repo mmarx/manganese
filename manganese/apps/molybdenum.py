@@ -63,6 +63,7 @@ class MoebiusNet(centered_net.ToneNet):
               9: (3, 6),        # A
               11: (5, 3),       # B
           }
+    offset = 0
 
     def name(self, x, y):
         base = x + 4 * y
@@ -104,7 +105,13 @@ class MoebiusNet(centered_net.ToneNet):
         ax, ay = self.anchor
         dx, dy = self.coords[pitch % 12]
 
-        self.anchor = (ax % 7 - dx % 7, ay)
+        if ax % 7 == 0:
+            if dx < ax:
+                self.offset = ax + 7
+            elif dx > ax:
+                self.offset = ax - 7
+
+        self.anchor = (self.offset + dx % 7, ay)
 
     def set_active(self, keys):
         self.active = []
@@ -161,11 +168,10 @@ class MoebiusUT(object):
             for pattern in self.patterns:
                 chord = [fst(pitch) for pitch in pitches[idx:(idx + 3)]]
                 if  chord == self.patterns[pattern]:
-                    anchor = chord[self.anchor_idx[pattern]]
+                    anchor = pitches[idx + self.anchor_idx[pattern]][1]
                     if anchor != self.anchor:
                         self.last_anchor = self.anchor
                         self.anchor = anchor
-                        print self.anchor, self.last_anchor
                     return
 
     @property

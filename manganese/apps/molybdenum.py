@@ -93,12 +93,16 @@ class MoebiusNet(centered_net.ToneNet):
         if dist < min_dist:
             self.right += max(by, min_dist - dist)
 
-    def pitch_coordinates(self, pitch, *args, **kwargs):
+    def pitch_coordinates(self, pitch, relative=False):
         ax, ay = self.anchor
         dx, dy = self.coords[pitch % 12]
 
-        return [(ax - 1, (dy - (2 * (ax - 1))) % 7),
-                (ax, (dy - (2 * ax)) % 7),
+        ox = ax
+        if relative:
+            ax, ay = 0, 0
+
+        return [(ax - 1, (dy - (2 * (ox - 1))) % 7),
+                (ax, (dy - (2 * ox)) % 7),
             ]
 
     def move(self, pitch):

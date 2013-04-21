@@ -222,8 +222,82 @@ class Application(vismut.Application):
         theme = themes.get(self.cfg('theme', 'default'), self)
 
         class Theme(theme.__class__):
+            chords = [{'major': [2, 22, 32,
+                                 22, 32, 33,
+                             ],
+                       'minor': [11, 27, 38,
+                                 27, 38, 39,
+                             ],
+                       'dim': [44, 45, 52,
+                               45, 52, 53,
+                           ],
+                   },
+                      {'major': [22, 23, 33,
+                                 23, 33, 34,
+                             ],
+                       'minor': [27, 28, 39,
+                                 28, 39, 40,
+                             ],
+                       'dim': [45, 46, 53,
+                               46, 53, 54,
+                           ],
+                   },
+                      {'major': [23, 24, 34,
+                                 24, 34, 35,
+                             ],
+                       'minor': [28, 29, 40,
+                                 29, 40, 41,
+                             ],
+                       'dim': [46, 47, 54,
+                               47, 54, 55,
+                           ]
+                   },
+                      {'major': [24, 25, 35,
+                                 25, 35, 36,
+                             ],
+                       'minor': [29, 30, 41,
+                                 30, 41, 42,
+                             ],
+                       'dim': [47, 48, 55,
+                               48, 55, 56,
+                           ],
+                   },
+                      {'major': [25, 26, 36,
+                                 2, 5, 32,
+                             ],
+                       'minor': [30, 31, 42,
+                                 11, 37, 38,
+                             ],
+                       'minor-major': [30, 31, 42,
+                                       2, 5, 32,
+                             ],
+                       'minor-dim': [30, 31, 42,
+                                     44, 51, 52,
+                             ],
+                       'dim-major': [48, 49, 56,
+                                     2, 5, 32,
+                           ],
+                       'dim-minor': [48, 49, 56,
+                                     11, 37, 38,
+                           ],
+                   },
+                  ]
+
+            chord_types = {0: ['major', 'minor', 'major', 'dim', 'minor'],
+                           1: ['major', 'dim', 'minor', 'major', 'minor'],
+                           2: ['minor', 'major', 'minor', 'major', 'minor-dim'],
+                           3: ['minor', 'major', 'minor', 'major', 'dim-major'],
+                           4: ['minor', 'major', 'dim', 'minor', 'major'],
+                           5: ['dim', 'minor', 'major', 'minor', 'major'],
+                           6: ['major', 'minor', 'major', 'minor', 'dim-minor'],
+                           }
+
             def draw_cage(self):
                 pass
+
+            def _chord(self, idx):
+                type = self.chord_types[self.tn.anchor[0] % 7][idx]
+                return self.chords[idx][type]
 
             def draw_chords(self, keys):
                 if len(keys) < 3:
@@ -238,13 +312,15 @@ class Application(vismut.Application):
                 if (0, 0) in nodes:
                     if (0, 1) in nodes:
                         if (-1, 2) in nodes:
-                            indices.extend([2, 22, 33,
-                                            22, 33, 34,
-                                        ])
+                            indices.extend(self._chord(0))
                             if (0, 3) in nodes:
-                                indices.extend([22, 23, 34,
-                                                23, 34, 35,
-                                            ])
+                                indices.extend(self._chord(1))
+                                if (0, 4) in nodes:
+                                    indices.extend(self._chord(2))
+                                    if (0, 5) in nodes:
+                                        indices.extend(self._chord(3))
+                                        if (0, 6) in nodes:
+                                            indices.extend(self._chord(4))
 
                 self._draw_chords(indices)
 

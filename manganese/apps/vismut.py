@@ -217,6 +217,8 @@ class Application(_apps.Application):
                                                             'major')),
                                           minor=list(self._color('chord', 'bg',
                                                             'minor')),
+                                          dim=list(self._color('chord', 'bg',
+                                                               'dim')),
                                           outline=outline))
 
         self.polys = (self.tn.columns * self.tn.rows *
@@ -323,7 +325,7 @@ class Application(_apps.Application):
 
         self.classifier = getattr(manganese.midi.pitch,
                                   'Naming' + self.cfg('naming', 'DE'))()
-        self.tn = net.ToneNet(self.classifier, **self.cfg('net', {}))
+        self.tn = net.ToneNet(classifier=self.classifier, **self.cfg('net', {}))
 
         self.context = gl.context.OpenGLContext(renderer=self.render,
                                                 max_fps=self.max_fps,

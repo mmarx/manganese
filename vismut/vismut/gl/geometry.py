@@ -126,7 +126,7 @@ def cage(offset, scale, outline, background, z=0.5, dz=0.001):
             ]
 
 
-def chords(major, minor, outline, z=0.45, dz=0.001):
+def chords(major, minor, dim, outline, z=0.45, dz=0.001):
     vertices = [[0.0, 0.0, z] + major,      # 0
                 [1.0, 0.0, z] + major,      # 1
                 [0.0, 1.0, z] + major,      # 2
@@ -154,23 +154,36 @@ def chords(major, minor, outline, z=0.45, dz=0.001):
                 [0.0, 4.0, z] + major,      # 24
                 [0.0, 5.0, z] + major,      # 25
                 [0.0, 6.0, z] + major,      # 26
-                [0.0, 1.0, z] + minor,      # 27
-                [0.0, 2.0, z] + minor,      # 28
-                [0.0, 3.0, z] + minor,      # 29
-                [0.0, 4.0, z] + minor,      # 30
-                [0.0, 5.0, z] + minor,      # 31
-                [0.0, 6.0, z] + minor,      # 32
-                [-1.0, 2.0, z] + major,     # 33
-                [-1.0, 3.0, z] + major,     # 34
-                [-1.0, 4.0, z] + major,     # 35
-                [-1.0, 5.0, z] + major,     # 36
-                [-1.0, 6.0, z] + major,     # 37
-                [-1.0, 1.0, z] + minor,     # 38
-                [-1.0, 2.0, z] + minor,     # 39
-                [-1.0, 3.0, z] + minor,     # 40
-                [-1.0, 4.0, z] + minor,     # 41
-                [-1.0, 5.0, z] + minor,     # 42
-                [-1.0, 6.0, z] + minor,     # 43
+                [0.0, 2.0, z] + minor,      # 27
+                [0.0, 3.0, z] + minor,      # 28
+                [0.0, 4.0, z] + minor,      # 29
+                [0.0, 5.0, z] + minor,      # 30
+                [0.0, 6.0, z] + minor,      # 31
+                [-1.0, 2.0, z] + major,     # 32
+                [-1.0, 3.0, z] + major,     # 33
+                [-1.0, 4.0, z] + major,     # 34
+                [-1.0, 5.0, z] + major,     # 35
+                [-1.0, 6.0, z] + major,     # 36
+                [-1.0, 1.0, z] + minor,     # 37
+                [-1.0, 2.0, z] + minor,     # 38
+                [-1.0, 3.0, z] + minor,     # 39
+                [-1.0, 4.0, z] + minor,     # 40
+                [-1.0, 5.0, z] + minor,     # 41
+                [-1.0, 6.0, z] + minor,     # 42
+                [0.0, 0.0, z] + dim,        # 43
+                [0.0, 1.0, z] + dim,        # 44
+                [0.0, 2.0, z] + dim,        # 45
+                [0.0, 3.0, z] + dim,        # 46
+                [0.0, 4.0, z] + dim,        # 47
+                [0.0, 5.0, z] + dim,        # 48
+                [0.0, 6.0, z] + dim,        # 49
+                [-1.0, 0.0, z] + dim,       # 50
+                [-1.0, 1.0, z] + dim,       # 51
+                [-1.0, 2.0, z] + dim,       # 52
+                [-1.0, 3.0, z] + dim,       # 53
+                [-1.0, 4.0, z] + dim,       # 54
+                [-1.0, 5.0, z] + dim,       # 55
+                [-1.0, 6.0, z] + dim,       # 56
             ]
 
     vertices.extend([[vertex[0], vertex[1], vertex[2] + dz] + outline

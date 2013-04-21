@@ -220,7 +220,7 @@ class Theme(object):
             return
 
         outline = []
-        outline_offset = 44
+        outline_offset = 57
         for i in range(0, len(indices), 3):
             outline.extend([indices[i] + outline_offset,
                             indices[i + 1] + outline_offset,

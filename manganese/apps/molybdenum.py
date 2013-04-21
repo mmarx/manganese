@@ -144,18 +144,26 @@ class MoebiusUT(object):
     def handle_midi(self, dword):
         event = event_from_dword(dword)
         type = event.describe_type()
+        update_anchor = False
 
         if type in ['note on', 'note off']:
             pitch = event.raw[1]
             if pitch % 12 in self.pitch_filter:
                 if type == 'note on':
+                    if not update_anchor and len(self.keys) < 3:
+                        update_anchor = True
                     self.keys.append(pitch)
                 else:
+                    if not update_anchor and pitch == self.anchor:
+                        update_anchor = True
                     try:
                         self.keys.remove(pitch)
                     except ValueError:
                         print ('-!- trying to remove pitch %0xd, but it '
                                'is already gone' % pitch)
+
+        if not update_anchor:
+            return
 
         fst = lambda p: p[0]
         pitches = [(key % 12, key) for key in set(self.keys)]

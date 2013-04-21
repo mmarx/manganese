@@ -219,8 +219,36 @@ class Application(vismut.Application):
                                         italic=False)
         self.font_atlas = gl.textures.font_atlas(self.data('vera.ttf'),
                                                  0, 128)
-        self.theme = themes.get(self.cfg('theme', 'default'), self)
-        self.theme.draw_cage = lambda: None
+        theme = themes.get(self.cfg('theme', 'default'), self)
+
+        class Theme(theme.__class__):
+            def draw_cage(self):
+                pass
+
+            def draw_chords(self, keys):
+                if len(keys) < 3:
+                    return
+
+                nodes = []
+                for idx in range(0, len(keys[0])):
+                    nodes.extend([key[idx] for key in keys])
+
+                indices = []
+
+                if (0, 0) in nodes:
+                    if (0, 1) in nodes:
+                        if (-1, 2) in nodes:
+                            indices.extend([2, 22, 33,
+                                            22, 33, 34,
+                                        ])
+                            if (0, 3) in nodes:
+                                indices.extend([22, 23, 34,
+                                                23, 34, 35,
+                                            ])
+
+                self._draw_chords(indices)
+
+        self.theme = Theme(app=self)
         self.classifier = getattr(manganese.midi.pitch,
                                   'Naming' + self.cfg('naming', 'DE'))()
         self.tn = MoebiusNet(classifier=self.classifier,

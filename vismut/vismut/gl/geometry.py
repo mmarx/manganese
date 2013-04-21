@@ -1,17 +1,17 @@
 ########################################################################
 # manganese - midi analysis & visualization platform
 # Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -128,27 +128,49 @@ def cage(offset, scale, outline, background, z=0.5, dz=0.001):
 
 def chords(major, minor, outline, z=0.45, dz=0.001):
     vertices = [[0.0, 0.0, z] + major,      # 0
-            [1.0, 0.0, z] + major,      # 1
-            [0.0, 1.0, z] + major,      # 2
-            [1.0, 1.0, z] + major,      # 3
-            [2.0, 0.0, z] + major,      # 4
-            [-1.0, 1.0, z] + major,     # 5
-            [-1.0, 0.0, z] + major,     # 6
-            [-1.0, -1.0, z] + major,    # 7
-            [0.0, -1.0, z] + major,     # 8
-            [1.0, -1.0, z] + major,     # 9
-            [0.0, 0.0, z] + minor,      # 10
-            [0.0, 1.0, z] + minor,      # 11
-            [-1.0, 1.0, z] + minor,     # 12
-            [-1.0, 0.0, z] + minor,     # 13
-            [-1.0, -1.0, z] + minor,    # 14
-            [-2.0, 0.0, z] + minor,     # 15
-            [1.0, 0.0, z] + minor,      # 16
-            [1.0, 1.0, z] + minor,      # 17
-            [1.0, -1.0, z] + minor,     # 18
-            [2.0, 0.0, z] + minor,      # 19
-            [2.0, 1.0, z] + minor,      # 20
-            [0.0, -1.0, z] + minor,     # 21
+                [1.0, 0.0, z] + major,      # 1
+                [0.0, 1.0, z] + major,      # 2
+                [1.0, 1.0, z] + major,      # 3
+                [2.0, 0.0, z] + major,      # 4
+                [-1.0, 1.0, z] + major,     # 5
+                [-1.0, 0.0, z] + major,     # 6
+                [-1.0, -1.0, z] + major,    # 7
+                [0.0, -1.0, z] + major,     # 8
+                [1.0, -1.0, z] + major,     # 9
+                [0.0, 0.0, z] + minor,      # 10
+                [0.0, 1.0, z] + minor,      # 11
+                [-1.0, 1.0, z] + minor,     # 12
+                [-1.0, 0.0, z] + minor,     # 13
+                [-1.0, -1.0, z] + minor,    # 14
+                [-2.0, 0.0, z] + minor,     # 15
+                [1.0, 0.0, z] + minor,      # 16
+                [1.0, 1.0, z] + minor,      # 17
+                [1.0, -1.0, z] + minor,     # 18
+                [2.0, 0.0, z] + minor,      # 19
+                [2.0, 1.0, z] + minor,      # 20
+                [0.0, -1.0, z] + minor,     # 21
+                [0.0, 2.0, z] + major,      # 22
+                [0.0, 3.0, z] + major,      # 23
+                [0.0, 4.0, z] + major,      # 24
+                [0.0, 5.0, z] + major,      # 25
+                [0.0, 6.0, z] + major,      # 26
+                [0.0, 1.0, z] + minor,      # 27
+                [0.0, 2.0, z] + minor,      # 28
+                [0.0, 3.0, z] + minor,      # 29
+                [0.0, 4.0, z] + minor,      # 30
+                [0.0, 5.0, z] + minor,      # 31
+                [0.0, 6.0, z] + minor,      # 32
+                [-1.0, 2.0, z] + major,     # 33
+                [-1.0, 3.0, z] + major,     # 34
+                [-1.0, 4.0, z] + major,     # 35
+                [-1.0, 5.0, z] + major,     # 36
+                [-1.0, 6.0, z] + major,     # 37
+                [-1.0, 1.0, z] + minor,     # 38
+                [-1.0, 2.0, z] + minor,     # 39
+                [-1.0, 3.0, z] + minor,     # 40
+                [-1.0, 4.0, z] + minor,     # 41
+                [-1.0, 5.0, z] + minor,     # 42
+                [-1.0, 6.0, z] + minor,     # 43
             ]
 
     vertices.extend([[vertex[0], vertex[1], vertex[2] + dz] + outline

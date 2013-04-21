@@ -1,17 +1,17 @@
 ########################################################################
 # manganese - midi analysis & visualization platform
 # Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -42,7 +42,7 @@ _themes = {}
 def get(name, app):
     if name in _themes:
         return _themes[name]
-        
+
     theme = None
     try:
         theme = __import__(name, globals=globals())
@@ -59,7 +59,7 @@ def get(name, app):
         if not issubclass(the_theme, Theme):
             raise ThemeLoadingError("Incomplete theme definition: "
                                     "`%s'" % name)
-        
+
         _themes[name] = the_theme(app=app)
         return _themes[name]
     except AttributeError:
@@ -79,7 +79,7 @@ class Theme(object):
             return getattr(self.app, attr)
 
         return NotImplemented
-        
+
     @gl.util.normalized_color
     def color(self, name, type, subtype=None):
         qualified_name = '%s_%s' % (name, type)
@@ -213,17 +213,21 @@ class Theme(object):
                 if (0, 1) in nodes:
                     indices.extend([17, 16, 11])
 
+        self._draw_chords(indices)
+
+    def _draw_chords(self, indices):
         if not indices:
             return
 
         outline = []
+        outline_offset = 44
         for i in range(0, len(indices), 3):
-            outline.extend([indices[i] + 22,
-                            indices[i + 1] + 22,
-                            indices[i + 1] + 22,
-                            indices[i + 2] + 22,
-                            indices[i + 2] + 22,
-                            indices[i] + 22])
+            outline.extend([indices[i] + outline_offset,
+                            indices[i + 1] + outline_offset,
+                            indices[i + 1] + outline_offset,
+                            indices[i + 2] + outline_offset,
+                            indices[i + 2] + outline_offset,
+                            indices[i] + outline_offset])
 
         loc = self._loc('flat-attrib', 'color')
         bg = vbo.VBO(numpy.array(indices, 'uint8'),
@@ -337,5 +341,3 @@ class Theme(object):
 
     def trace_colors(self, steps):
         return gl.textures.trace_colors(steps=steps, last=360)
-
-

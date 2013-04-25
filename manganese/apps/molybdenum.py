@@ -55,6 +55,10 @@ import vismut
 
 
 class MoebiusNet(centered_net.ToneNet):
+    def __init__(self, grow=True, *args, **kwargs):
+        self.do_grow = grow
+        super(MoebiusNet, self).__init__(*args, **kwargs)
+
     coords = {0: (0, 0),        # C
               2: (2, 4),        # D
               4: (4, 1),        # E
@@ -77,6 +81,8 @@ class MoebiusNet(centered_net.ToneNet):
         return self._name(base, 0)
 
     def should_grow(self, *args, **kwargs):
+        if not self.do_grow:
+            return
         ax, ay = self.anchor
 
         return min(ax - self.left - 1,
@@ -335,6 +341,7 @@ class Application(vismut.Application):
         self.classifier = getattr(manganese.midi.pitch,
                                   'Naming' + self.cfg('naming', 'DE'))()
         self.tn = MoebiusNet(classifier=self.classifier,
+                             grow=self.cfg('grow', True),
                              **self.cfg('net', self.default_net))
         self.resize_net()
         self.ut = MoebiusUT()

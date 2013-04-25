@@ -184,6 +184,18 @@ def chords(major, minor, dim, outline, z=0.45, dz=0.001):
                 [-1.0, 4.0, z] + dim,       # 54
                 [-1.0, 5.0, z] + dim,       # 55
                 [-1.0, 6.0, z] + dim,       # 56
+                [-1.0, 7.0, z] + major,     # 57
+                [-1.0, -1.0, z] + major,    # 58
+                [0.0, -1.0, z] + major,     # 59
+                [0.0, 7.0, z] + major,      # 60
+                [-1.0, 7.0, z] + minor,     # 61
+                [-1.0, -1.0, z] + minor,    # 62
+                [0.0, -1.0, z] + minor,     # 63
+                [0.0, 7.0, z] + minor,      # 64
+                [-1.0, -1.0, z] + dim,      # 65
+                [-1.0, 7.0, z] + dim,       # 66
+                [0.0, -1.0, z] + dim,       # 67
+                [0.0, 7.0, z] + dim,        # 68
             ]
 
     vertices.extend([[vertex[0], vertex[1], vertex[2] + dz] + outline

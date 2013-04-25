@@ -220,7 +220,8 @@ class Theme(object):
             return
 
         outline = []
-        outline_offset = 57
+        outline_offset = 69 # TODO: calculate this dynamically on
+                            #       geometry buffer creation
         for i in range(0, len(indices), 3):
             outline.extend([indices[i] + outline_offset,
                             indices[i + 1] + outline_offset,

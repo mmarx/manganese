@@ -84,6 +84,5 @@ class Application(molybdenum.Application):
             with gl.util.draw_vbo(0, self.vbos['moebius']):
                 GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
                 GL.glUniform4f(self._loc('flat', 'color'),
-                               0.0, 0.0, 0.0, 1.0)
-                #*self._color('key', 'bg', 'anchor_initial'))
-                GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertices['moebius'])
+                               *self._color('key', 'bg', 'anchor_initial'))
+                GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertices['moebius'])

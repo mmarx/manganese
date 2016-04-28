@@ -1,21 +1,21 @@
-Bauen kann man den Kram folgendermassen:
-cd build
-cmake ..
-ccmake .
-<CMAKE_INSTALL_PREFIX setzen, etwa auf …/build/install>
-make install
+# manganese - midi analysis & visualization platform
 
-Starten ist dann einfach:
-./mng vismut
+## building
+  cd build
+  cmake ..
+  ccmake .
+  <set CMAKE_INSTALL_PREFIX, e.g. …/build/install>
+  make install
 
-Abhaengigkeiten (ich hoffe, ich habe jetzt keine vergessen):
+## running it
+  ./mng vismut
+You'll need to supply MIDI data via jack-midi.
+
+## Dependencies
  - python-dev (2.5 <= x < 3)
- - boost (1.42 ist auf jeden Fall aktuell genug, ansonsten ungetestet)
+ - boost (tested with 1.42)
  - boost-python
- - jack (nur mit jack2 getestet)
- - pygame (1.8 geht)
+ - jack (only tested jack2)
+ - pygame (1.8 works)
  - pyOpenGL (>= 3.0)
- - SDL (1.2, pygame braucht das)
-
-Unter MacPorts sind folgende Pakete zu installieren
- - boost +python27 (oder ähnliches)
+ - SDL (1.2, needed by pygame)

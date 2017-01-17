@@ -99,12 +99,12 @@ class Application(molybdenum.Application):
         GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, tex, 0)
 
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fb)
-        GL.glClearColor(1.0, 1.0, 1.0, 1.0)
+        GL.glClearColor(*self.theme.color('screen', 'bg'))
         super(Application, self).render()
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
         GL.glDeleteFramebuffers(1, numpy.array(fb))
 
-        GL.glClearColor(0.0, 0.0, 0.0, 0.0)
+        GL.glClearColor(*self.theme.color('screen', 'fg'))
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
         with gl.util.use_program(self.programs['textured']) as program:

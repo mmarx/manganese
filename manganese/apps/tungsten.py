@@ -72,6 +72,7 @@ def moebius(width=1, steps=100, z=0.0):
 
 class Application(molybdenum.Application):
     def __init__(self, *args, **kwargs):
+        self.default_net['left'] = -6
         super(Application, self).__init__(*args, **kwargs)
         self._geometry('moebius', moebius(steps=2500))
         self.the_matrix = gl.util.ortho(-1.5 , 2.5, -2.5, 2.5, -2.5, 2.5)

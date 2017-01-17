@@ -59,10 +59,13 @@ import molybdenum
 from molybdenum import MoebiusNet, MoebiusUT
 
 def moebius(width=1, steps=100, z=0.0):
+    urange = numpy.linspace(0, 2 * pi, steps)
     vertices = [[(1 + 0.5 * v * cos(0.5 * u)) * cos(u),
                  (1 + 0.5 * v * cos(0.5 * u)) * sin(u),
-                 0.5 * v * sin(0.5 * u)]
-                for u in numpy.linspace(0, 2 * pi, steps)
+                 0.5 * v * sin(0.5 * u),
+                 u / urange[-1],
+                 0.5 + 0.5 * v]
+                for u in urange
                 for v in [-1, 1,]]
 
     return vertices
@@ -71,18 +74,45 @@ class Application(molybdenum.Application):
     def __init__(self, *args, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
         self._geometry('moebius', moebius(steps=2500))
-        self.the_matrix = gl.util.ortho(-5, 5, -5, 5, -5, 5)
+        self.the_matrix = gl.util.ortho(-1.5 , 2.5, -2.5, 2.5, -2.5, 2.5)
+
+    def run(self):
+        super(Application, self).run()
+        self.tn.do_grow = False
 
     def render(self):
+        # render to texture
+        tex = GL.glGenTextures(1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, self.mode[0], self.mode[1], 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, None)
+
+        fb = GL.glGenFramebuffers(1)
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fb)
+        GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, tex, 0)
+
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fb)
+        GL.glClearColor(1.0, 1.0, 1.0, 1.0)
+        super(Application, self).render()
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+        GL.glDeleteFramebuffers(1, numpy.array(fb))
+
+        GL.glClearColor(0.0, 0.0, 0.0, 0.0)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
-        with gl.util.use_program(self.programs['flat']) as program:
+        with gl.util.use_program(self.programs['textured']) as program:
             gl.util.transformation_matrix(program, self.the_matrix,
-                                          location=self._loc('flat',
+                                          location=self._loc('textured',
                                                              'transformation'))
-
-            with gl.util.draw_vbo(0, self.vbos['moebius']):
-                GL.glUniform3f(self._loc('flat', 'translation'), 0.0, 0.0, 0.0)
-                GL.glUniform4f(self._loc('flat', 'color'),
-                               *self._color('key', 'bg', 'anchor_initial'))
-                GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertices['moebius'])
+            with gl.util.draw_vbo(0, self.vbos['moebius'], stride=20):
+                GL.glUniform3f(self._loc('textured', 'translation'), 0.0, 0.0, 0.0)
+                GL.glUniform1i(self._loc('textured', 'texture'), 0)
+                loc = self._loc('textured', 'tex_coords')
+                with gl.util.vertex_attrib_array(loc):
+                    GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False, 20, self.vbos['moebius'] + 12)
+                    GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+                    GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertices['moebius'])
+        GL.glDeleteTextures(numpy.array([tex], 'uint32'))

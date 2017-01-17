@@ -215,6 +215,7 @@ class Application(vismut.Application):
                                                 max_fps=self.max_fps,
                                                 vsync=self.vsync)
         mode = self.cfg('mode', (640, 480))
+        self.mode = mode
         self.context.setup(mode)
         self.aspect = mode[0] / mode[1]
 

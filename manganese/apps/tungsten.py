@@ -84,17 +84,26 @@ class Application(molybdenum.Application):
     def run(self):
         super(Application, self).run()
 
-    def render(self):
-        # render to texture
+    def init_gl(self):
+        super(Application, self).init_gl()
+
         tex = GL.glGenTextures(1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
-        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
-        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, self.mode[0], self.mode[1], 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, None)
+        for wrap in [GL.GL_TEXTURE_WRAP_S, GL.GL_TEXTURE_WRAP_T]:
+            GL.glTexParameteri(GL.GL_TEXTURE_2D, wrap, GL.GL_REPEAT)
+        for filt in [GL.GL_TEXTURE_MIN_FILTER, GL.GL_TEXTURE_MAG_FILTER]:
+            GL.glTexParameteri(GL.GL_TEXTURE_2D, filt, GL.GL_NEAREST)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
+                        self.mode[0], self.mode[1], 0,
+                        GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, None)
+        self.render_target = tex
 
-        with gl.textures.render_to_texture(tex):
+    def cleanup_gl(self):
+        GL.glDeleteTextures(numpy.array([self.render_target], 'uint32'))
+        super(Application, self).cleanup_gl()
+
+    def render(self):
+        with gl.textures.render_to_texture(self.render_target):
             GL.glClearColor(*self.theme.color('screen', 'bg'))
             super(Application, self).render()
 
@@ -106,11 +115,13 @@ class Application(molybdenum.Application):
                                           location=self._loc('textured',
                                                              'transformation'))
             with gl.util.draw_vbo(0, self.vbos['moebius'], stride=20):
-                GL.glUniform3f(self._loc('textured', 'translation'), 0.0, 0.0, 0.0)
+                GL.glUniform3f(self._loc('textured', 'translation'),
+                               0.0, 0.0, 0.0)
                 GL.glUniform1i(self._loc('textured', 'texture'), 0)
                 loc = self._loc('textured', 'tex_coords')
                 with gl.util.vertex_attrib_array(loc):
-                    GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False, 20, self.vbos['moebius'] + 12)
-                    GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
-                    GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, self.vertices['moebius'])
-        GL.glDeleteTextures(numpy.array([tex], 'uint32'))
+                    GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, False,
+                                             20, self.vbos['moebius'] + 12)
+                    GL.glBindTexture(GL.GL_TEXTURE_2D, self.render_target)
+                    GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0,
+                                    self.vertices['moebius'])

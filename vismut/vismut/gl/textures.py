@@ -1,17 +1,17 @@
 ########################################################################
 # manganese - midi analysis & visualization platform
 # Copyright (c) 2010, 2011, 2013 Maximilian Marx <mmarx@wh2.tu-dresden.de>
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
 # published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -21,9 +21,11 @@
 from __future__ import division
 
 from math import ceil, log
+from contextlib import contextmanager
 
 from OpenGL import GL
 
+import numpy
 import pygame
 import pygame.image
 
@@ -136,3 +138,16 @@ def font_atlas(file, face, resolution):
                     resolution, 0, GL.GL_LUMINANCE, GL.GL_UNSIGNED_BYTE, data)
 
     return tex
+
+
+@contextmanager
+def render_to_texture(texture):
+    fbo = GL.glGenFramebuffers(1)
+    GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fbo)
+    GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0,
+                              GL.GL_TEXTURE_2D, texture, 0)
+
+    GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fbo)
+    yield
+    GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+    GL.glDeleteFramebuffers(1, numpy.array(fbo))

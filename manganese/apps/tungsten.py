@@ -94,15 +94,9 @@ class Application(molybdenum.Application):
         GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
         GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, self.mode[0], self.mode[1], 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, None)
 
-        fb = GL.glGenFramebuffers(1)
-        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fb)
-        GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, tex, 0)
-
-        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, fb)
-        GL.glClearColor(*self.theme.color('screen', 'bg'))
-        super(Application, self).render()
-        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
-        GL.glDeleteFramebuffers(1, numpy.array(fb))
+        with gl.textures.render_to_texture(tex):
+            GL.glClearColor(*self.theme.color('screen', 'bg'))
+            super(Application, self).render()
 
         GL.glClearColor(*self.theme.color('screen', 'fg'))
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)

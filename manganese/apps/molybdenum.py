@@ -20,6 +20,8 @@
 
 from __future__ import division
 
+from math import ceil
+
 import numpy
 import pygame
 import pygame.image
@@ -69,6 +71,15 @@ class MoebiusNet(centered_net.ToneNet):
           }
     offset = 0
 
+    def clamp(self, x, y):
+        w = self.left - self.right
+
+
+        if x < self.left or x > self.right:
+            x = ((ceil(abs(w / 7.0)) * 7) % abs(w)) + (x % w)
+
+        return x, y
+
     def name(self, x, y):
         base = x + 4 * y
 
@@ -106,10 +117,15 @@ class MoebiusNet(centered_net.ToneNet):
         ox = ax
         if relative:
             ax, ay = 0, 0
+        lx = ax -1
+        if not self.do_grow and lx < self.left:
+            lx = self.right
 
-        return [(ax - 1, (dy - (2 * (ox - 1))) % 7),
-                (ax, (dy - (2 * ox)) % 7),
-            ]
+        coordinates = [(lx, (dy - (2 * (ox - 1))) % 7),
+                       (ax, (dy - (2 * ox)) % 7),
+        ]
+
+        return coordinates
 
     def move(self, pitch):
         ax, ay = self.anchor
@@ -122,6 +138,9 @@ class MoebiusNet(centered_net.ToneNet):
                 self.offset = ax - 7
 
         self.anchor = (self.offset + dx % 7, ay)
+
+        if not self.do_grow:
+            self.anchor = self.clamp(*self.anchor)
 
     def set_active(self, keys):
         self.active = []

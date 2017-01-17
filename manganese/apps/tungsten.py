@@ -76,9 +76,13 @@ class Application(molybdenum.Application):
         self._geometry('moebius', moebius(steps=2500))
         self.the_matrix = gl.util.ortho(-1.5 , 2.5, -2.5, 2.5, -2.5, 2.5)
 
+    def cfg(self, key, default):
+        if key == 'grow':
+            return False
+        return super(Application, self).cfg(key, default)
+
     def run(self):
         super(Application, self).run()
-        self.tn.do_grow = False
 
     def render(self):
         # render to texture

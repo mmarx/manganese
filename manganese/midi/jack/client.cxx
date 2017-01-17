@@ -72,6 +72,8 @@ namespace mn
   {
     if (client_)
       {
+        jack_deactivate (client_);
+
         if (in_port_)
           {
             jack_port_unregister (client_, in_port_);
@@ -133,6 +135,12 @@ namespace mn
                                           NULL,
                                           JACK_DEFAULT_MIDI_TYPE,
                                           JackPortIsOutput));
+
+    if (!ps)
+      {
+        // no ports available at all
+        return ret;
+      }
 
     for (char const** port = ps.get(); *port; ++port)
       {

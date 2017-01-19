@@ -59,11 +59,11 @@ import molybdenum
 from molybdenum import MoebiusNet, MoebiusUT
 
 def moebius(width=1, steps=100, z=0.0):
-    urange = numpy.linspace(0, 4 * pi, steps)
+    urange = numpy.linspace(0, 2 * pi, steps)
     vertices = [[(1 + 0.5 * v * cos(0.5 * u)) * cos(u),
                  (1 + 0.5 * v * cos(0.5 * u)) * sin(u),
                  0.5 * v * sin(0.5 * u),
-                 2 * u / urange[-1],
+                 1 * u / urange[-1],
                  0.5 + 0.5 * v]
                 for u in urange
                 for v in [-1, 1,]]
@@ -72,7 +72,7 @@ def moebius(width=1, steps=100, z=0.0):
 
 class Application(molybdenum.Application):
     def __init__(self, *args, **kwargs):
-        self.default_net['left'] = -13
+        self.default_net['left'] = -6
         super(Application, self).__init__(*args, **kwargs)
         self._geometry('moebius', moebius(steps=2500))
         self.the_matrix = gl.util.ortho(-1.25 , 1.75, -1.5, 1.5, -2.5, 2.5)
